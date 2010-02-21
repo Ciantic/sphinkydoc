@@ -1,11 +1,4 @@
-Readme
-=======
 .. include:: ../../README.rst
-
-Copying
-=======
-.. include:: ../../COPYING
-	:literal:
 
 $yourmodule documentation
 ==================================
@@ -14,3 +7,9 @@ $yourmodule documentation
    :toctree: api
 
    $yourmodule
+
+Copying
+=======
+.. include:: ../../COPYING
+	:literal:
+   
