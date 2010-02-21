@@ -1,5 +1,6 @@
 """SphinkyDoc script"""
 from string import Template
+import subprocess
 import shutil
 import logging
 import optparse
@@ -84,7 +85,7 @@ def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
             
             # Read the file to template object
             try:
-                log.info("Opening dynamic config template file '%s' ..." % rel_filepath)
+                log.info("Reading template file '%s' ..." % rel_filepath)
                 f = open(filepath, 'r')
                 t = Template(f.read())
                 f.close()
@@ -116,11 +117,17 @@ def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
                     sys.exit(0)
     log.info("Directory templated.")
                     
-def run_sphinx_build(sphinx_conf_dir):
-    pass
+def run_sphinx_build(sphinx_conf_dir, dry_run=False, sphinx_build='sphinx-build.py'):
+    """Runs the sphinx-build.py in given directory."""
+    cmd = ["python", sphinx_build, "-b", "html", "-d", "_temp/_build/doctrees", "_temp/", "html"]
+    log.info("Sphinx build, inside directory %s" % os.getcwd())
+    log.info("Running sphinx-build: %s" % subprocess.list2cmdline(cmd))
+    
+    if not dry_run:
+        subprocess.call(cmd)
 
 if __name__ == '__main__':
-    parser = optparse.OptionParser("""sphinkydoc.py <MODULENAME>""")
+    parser = optparse.OptionParser("""sphinkydoc.py <PACKAGE/MODULE NAME>""")
     
     parser.add_option("-v", "--verbose",
                       dest="verbose", action="store_true", default=True) # TODO: Debug True, Prod False
@@ -128,6 +135,8 @@ if __name__ == '__main__':
                       dest="dry_run", action="store_true", default=False)
     parser.add_option("-o", "--output-dir",
                       dest="output", default=os.getcwd())
+    parser.add_option("-b", "--sphinx-build-py",
+                      dest="sphinx_build", default="sphinx-build.py")
     parser.add_option("-s", "--sphinx-template-dir",
                       dest="sphinxtemplate_dir", default='')
     parser.add_option("", "--no-validation",
@@ -138,11 +147,11 @@ if __name__ == '__main__':
         parser.print_usage()
         sys.exit(0)
         
-    # Be verbose if also on dry run
+    # Be verbose if on dry run
     if options.verbose or options.dry_run:
         log.setLevel(logging.INFO)
     
-    # Get 
+    # Sphinx configuration template directory 
     sphinxtemplate_dir = options.sphinxtemplate_dir
     if not sphinxtemplate_dir:
         sphinxtemplate_dir = os.path.join(os.path.dirname(sphinkydocext.__file__),
@@ -160,11 +169,17 @@ if __name__ == '__main__':
               dry_run=options.dry_run)
     
     # Template the temp directory
-    template_dir(temp_dir, {
-        'conf.py' : {
-            'yourmodule' : module_name 
-        }
-    }, options.dry_run)
+    template_dir(temp_dir, file_substs={
+            'conf.py' : {
+                'project' : '%s.__project__' % module_name,
+                'copyright' : '%s.__copyright__' % module_name,
+                'version' : '%s.__version__' % module_name,
+                'release' : '%s.__release__' % module_name,
+            }
+        }, 
+        substs={
+            'yourmodule' : module_name,
+        }, dry_run=options.dry_run)
     
     # Validates the conf.py
     if options.validate:
@@ -176,4 +191,4 @@ if __name__ == '__main__':
             log.exception("Unable to validate Sphinx configuration file: %s" % e)
             sys.exit(0)
     
-    run_sphinx_build(temp_dir)
+    run_sphinx_build(temp_dir, sphinx_build=options.sphinx_build)

@@ -1,19 +1,21 @@
 # -*- coding: utf-8 -*-
+
+# Sphinkydoc template file for sphinx conf.py.
+
 import sys
 import os
-import $yourmodule as module
-
-# Note, this file is not supposed to be imported.
+import $yourmodule
+project = $project
+copyright = $copyright
+version = $version
+release = $release
     
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
               'sphinx.ext.autosummary', 'sphinkydocext']
+
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
-project = module.__project__
-copyright = module.__copyright__
-version = module.__version__
-release = module.__release__
 exclude_trees = ['_build', '_templates']
 pygments_style = 'sphinx'
 
