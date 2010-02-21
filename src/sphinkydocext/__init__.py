@@ -11,10 +11,10 @@ __project__ = "Sphinkydoc, Sphinx extension package"
 __author__ = "Jari Pennanen"
 __license__ = "FreeBSD, see COPYING"
 
-from sphinkydocext import directives
+from sphinkydocext import directives, utils
 from docutils import nodes
 
-__all__ = ['directives', 'setup']
+__all__ = ['directives', 'utils', 'setup']
 
 #def process_sphinkydoc_toc(app, doctree):
 #    """
@@ -65,9 +65,9 @@ __all__ = ['directives', 'setup']
 #    
 def setup(app):
     from sphinkydocext.directives.usage import usage_directive
-    from sphinkydocext.directives.sphinkydoc import Sphinkydoc, sphinkydoc_table
+    from sphinkydocext.directives.sphinkydoc import Sphinkydoc
     #app.setup_extension('sphinkydocext')
-    app.add_node(sphinkydoc_table)
+    #app.add_node(sphinkydoc_table)
 #    app.connect('doctree-read', process_sphinkydoc_toc)
 #    app.connect('builder-inited', process_generate_options)
     app.add_directive('usage', usage_directive, 1, (0, 1, 1))
