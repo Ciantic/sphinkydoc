@@ -18,6 +18,8 @@ Modules
 {% endif %}
 {% endblock %}
 
+{% if members %}
+
 Members
 ---------------
 
@@ -29,9 +31,15 @@ Members
 	{{ member }}
 	{% endif %}
 	{% endfor %}
+	
+{% endif %}
+
+{% if members or attributes %}
 
 Member definitions
 ------------------
+
+{% endif %}
 
 {% block attributes %}
 {% if attributes %}	

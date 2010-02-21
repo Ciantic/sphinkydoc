@@ -1,3 +1,3 @@
 """SphinkyDoc directives"""
-from sphinkydocext.directives import usage
-__all__ = ['usage']
+from sphinkydocext.directives import usage, sphinkydoc
+__all__ = ['usage', 'sphinkydoc']

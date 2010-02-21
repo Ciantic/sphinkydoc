@@ -1,4 +1,4 @@
-"""This is example package, used in Sphinkydoc"""
+"""This is example package, demonstrating the automatically generated docs."""
 
 __project__ = "Example SphinkyDoc Package"
 __copyright__ = "Sphinkydoc, 2010"

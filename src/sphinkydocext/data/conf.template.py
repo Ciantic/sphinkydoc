@@ -1,14 +1,21 @@
 # -*- coding: utf-8 -*-
 
 # Sphinkydoc template file for sphinx conf.py.
-
+# pylint: disable-msg-cat=WCREFI
+ 
 import sys
 import os
-import $yourmodule
-project = $project
-copyright = $copyright
-version = $version
-release = $release
+
+{% for module in modules %} 
+import {{ module }}
+{% endfor %}
+
+project =  {{ project }}
+copyright = {{ copyright }}
+version = {{ version }}
+release = {{ release }}
+
+scripts = [{% for script in scripts %} "{{ script }}", {% endfor %}]
     
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
               'sphinx.ext.autosummary', 'sphinkydocext']

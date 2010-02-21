@@ -1,5 +1,5 @@
 """SphinkyDoc script"""
-from string import Template
+#from string import Template
 import subprocess
 import shutil
 import logging
@@ -7,7 +7,7 @@ import optparse
 import sys
 import sphinkydocext
 import os
-import re
+from jinja2 import Template
 
 logging.basicConfig()
 log = logging.getLogger("sphinkydoc")
@@ -40,10 +40,10 @@ def copy_data(src_dir, dst_dir, remove_dst=True, dry_run=False):
             sys.exit(0)
         
 def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
-    """Templates the directory.
+    """Templates the directory using jinja2.
     
-    All files inside template_dir which has ".template" in filename is templated
-    using :class:`string.Template`.
+    All files inside template_dir which has ".template" in filename is 
+    templated.
     
     :param template_dir: Path to directory of templating.
     :param file_substs: Dictionary of template substitions by filename relative 
@@ -80,8 +80,8 @@ def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
                 shutil.move(filepath, filepath_dst)
                 filepath = filepath_dst
                 
-            rel_filepath = filepath[len(template_abs_path)+1:].replace("\\", 
-                                                                     "/")
+            rel_filepath = filepath[len(template_abs_path)+1:].\
+                replace("\\", "/")
             
             # Read the file to template object
             try:
@@ -90,7 +90,7 @@ def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
                 t = Template(f.read())
                 f.close()
             except:
-                log.exception("Dynamic config template '%s' is not readable." % \
+                log.exception("Dynamic conf template '%s' is not readable." % \
                               rel_filepath)
                 sys.exit(0)
             
@@ -101,11 +101,13 @@ def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
             
             # Try to template using substition
             try:
-                tmp = t.substitute(s)
+                tmp = t.render(s)
             except KeyError, er:
-                log.error("Template '%s' is missing value for key: %s" % (rel_filepath, er))
+                log.error("Template '%s' is missing value for key: %s" % \
+                          (rel_filepath, er))
             else:
-                log.info("Writing the templated substition to '%s'..." % rel_filepath)
+                log.info("Writing the templated substition to '%s'..." % \
+                         rel_filepath)
                 
                 try:
                     if not dry_run:
@@ -113,21 +115,30 @@ def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
                         f.write(tmp)
                         f.close()
                 except:
-                    log.exception("Template file '%s' is not writable..." % filepath)
+                    log.exception("Template file '%s' is not writable..." % \
+                                  filepath)
                     sys.exit(0)
     log.info("Directory templated.")
                     
-def run_sphinx_build(sphinx_conf_dir, dry_run=False, sphinx_build='sphinx-build.py'):
+def run_sphinx_build(sphinx_conf_dir, dry_run=False, 
+                     sphinx_build='sphinx-build.py'):
     """Runs the sphinx-build.py in given directory."""
-    cmd = ["python", sphinx_build, "-b", "html", "-d", "_temp/_build/doctrees", "_temp/", "html"]
+    old_dir = os.getcwd()
+    os.chdir(sphinx_conf_dir)
+    cmd1 = ["python", sphinx_build, ".", "../html"]
+    cmd2 = ["python", sphinx_build, ".", "../html"]
     log.info("Sphinx build, inside directory %s" % os.getcwd())
-    log.info("Running sphinx-build: %s" % subprocess.list2cmdline(cmd))
+    log.info("Running sphinx-build (1): %s" % subprocess.list2cmdline(cmd1))
+    log.info("Running sphinx-build (2): %s" % subprocess.list2cmdline(cmd2))
     
     if not dry_run:
-        subprocess.call(cmd)
+        subprocess.call(cmd1)
+        subprocess.call(cmd2)
+    
+    os.chdir(old_dir)
 
 if __name__ == '__main__':
-    parser = optparse.OptionParser("""sphinkydoc.py <PACKAGE/MODULE NAME>""")
+    parser = optparse.OptionParser("""sphinkydoc.py <MODULE>, ...""")
     
     parser.add_option("-v", "--verbose",
                       dest="verbose", action="store_true", default=True) # TODO: Debug True, Prod False
@@ -137,29 +148,34 @@ if __name__ == '__main__':
                       dest="output", default=os.getcwd())
     parser.add_option("-b", "--sphinx-build-py",
                       dest="sphinx_build", default="sphinx-build.py")
-    parser.add_option("-s", "--sphinx-template-dir",
+    parser.add_option("-t", "--sphinx-template-dir",
                       dest="sphinxtemplate_dir", default='')
+    parser.add_option("-s", "--script",
+                      dest="scripts", action="append", default=[])
     parser.add_option("", "--no-validation",
                       dest="validate", action="store_false", default=True)
     try:
-        (options, (module_name, )) = parser.parse_args()
+        (options, modules) = parser.parse_args()
     except:
         parser.print_usage()
         sys.exit(0)
         
+    sphinx_project = '%s.__project__' % modules[0]
+    sphinx_copyright = '%s.__copyright__' % modules[0]
+    sphinx_version = '%s.__version__' % modules[0]
+    sphinx_release = '%s.__release__' % modules[0]
+    
     # Be verbose if on dry run
     if options.verbose or options.dry_run:
         log.setLevel(logging.INFO)
     
     # Sphinx configuration template directory 
-    sphinxtemplate_dir = options.sphinxtemplate_dir
-    if not sphinxtemplate_dir:
-        sphinxtemplate_dir = os.path.join(os.path.dirname(sphinkydocext.__file__),
+    sphinxtemplate_dir = options.sphinxtemplate_dir or \
+                         os.path.join(os.path.dirname(sphinkydocext.__file__),
                                           DYNAMIC_SPHINX_DIR)
     
-    log.info("Creating documentation for '%(package)s' to "
-             "directory '%(dir)s' ..." % {'package': module_name, 
-                                        'dir': options.output })
+    log.info("Creating documentation to "
+             "directory '%(dir)s' ..." % {'dir': options.output })
     
     # Temp directory inside the docs
     temp_dir = os.path.join(options.output, TEMP_CONFIGURATION_DIR)
@@ -171,14 +187,15 @@ if __name__ == '__main__':
     # Template the temp directory
     template_dir(temp_dir, file_substs={
             'conf.py' : {
-                'project' : '%s.__project__' % module_name,
-                'copyright' : '%s.__copyright__' % module_name,
-                'version' : '%s.__version__' % module_name,
-                'release' : '%s.__release__' % module_name,
+                'project' : sphinx_project,
+                'copyright' : sphinx_copyright,
+                'version' : sphinx_version,
+                'release' : sphinx_release,
             }
         }, 
         substs={
-            'yourmodule' : module_name,
+            'scripts' : map(os.path.realpath, options.scripts),
+            'modules' : modules,
         }, dry_run=options.dry_run)
     
     # Validates the conf.py

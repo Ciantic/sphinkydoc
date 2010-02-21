@@ -3,10 +3,21 @@
 Documentation
 =============
 
-.. autosummary::
-   :toctree: api
+{% if modules %}
+.. rubric:: Modules and packages
 
-   $yourmodule
+.. sphinkydoc::
+	:modules: {% for module in modules %}{{ module }} {% endfor %}
+{% endif %}
+
+  
+{% if scripts %}
+.. rubric:: Scripts
+
+.. sphinkydoc::
+	:scripts: sphinkydoc.py second.py "third script.py"
+{% endif %}
+
 
 .. toctree::
    :maxdepth: 2

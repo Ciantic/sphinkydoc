@@ -1,0 +1,4 @@
+:mod:`{{ module }}`
+========================
+
+.. automodule:: {{ module }}
