@@ -1,15 +1,14 @@
 .. include:: ../../README.rst
 
-$yourmodule documentation
-==================================
+Documentation
+=============
 
 .. autosummary::
    :toctree: api
 
    $yourmodule
 
-Copying
-=======
-.. include:: ../../COPYING
-	:literal:
-   
+.. toctree::
+   :maxdepth: 2
+
+   copying
