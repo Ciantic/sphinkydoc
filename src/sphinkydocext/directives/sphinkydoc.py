@@ -11,7 +11,7 @@ from sphinx import addnodes
 from sphinx.ext.autosummary import import_by_name
 from sphinx.util.compat import Directive
 import os
-from pkgutil import iter_modules # TODO: What about py2.4?
+from pkgutil import iter_modules # TODO: DEPENDENCY: Python 2.5
 import sys
 
 
@@ -19,6 +19,9 @@ def get_submodules(module, use_all=True, custom_all=None):
     """Get submodules of module.
     
     Uses all if required.
+    
+    .. note:: This is generator.
+    
     """
     if not custom_all:
         custom_all = lambda m, s: True
@@ -29,7 +32,8 @@ def get_submodules(module, use_all=True, custom_all=None):
             except AttributeError:
                 if use_all:
                     print >> sys.stderr, ("Module %s is missing __all__, "
-                                          "falling back to public members.")
+                                          "falling back to public members." \
+                                          % module.__name__)
             else:
                 custom_all = lambda m, s: s in all_
         
@@ -46,10 +50,14 @@ def get_module_members(module):
     
     """
     
-    all_submodules = get_submodules(module)
+    all_submodules = list(get_submodules(module))
             
     return {'all_modules': all_submodules, 'modules' : all_submodules}
 
+
+class sphinkydoc_toc(nodes.comment):
+    """Dummy toc node."""
+    pass
 
 class Sphinkydoc(Directive):
     """Sphinkydoc directive.
@@ -65,6 +73,7 @@ class Sphinkydoc(Directive):
     """
     
     option_spec = {
+        'no-gen': directives.unchanged, 
         'scripts': directives.unchanged,
         'modules': directives.unchanged,
     }
@@ -76,15 +85,15 @@ class Sphinkydoc(Directive):
     def run(self):
         """Run the Sphinkydoc rst directive."""
         scripts = []
-        modules = []
+        module_names = []
         
         if 'scripts' in self.options:
             scripts = quote_split(self.options['scripts'])
             
         if 'modules' in self.options:
-            modules = quote_split(self.options['modules'])
+            module_names = quote_split(self.options['modules'])
             
-        print >> sys.stderr, ("modules %s" % modules)
+        #print >> sys.stderr, ("module_names %s" % module_names)
         
         def generate_docs(gen, items):
             for item in items:
@@ -92,25 +101,32 @@ class Sphinkydoc(Directive):
                     yield gen(item)
                 except GenerateDocError, e:
                     print >> sys.stderr, "Doc cannot be generated: %s" % e
-        
+    
         # Generate recursively all submodules and packages also
-        for module_name in modules:
-            try:
-                self.iter_generate_module_doc(module_name)
-            except GenerateDocError:
-                pass 
-            
-        module_rows = list(generate_docs(self.generate_module_doc, modules))
-        script_rows = list(generate_docs(self.generate_script_doc, scripts))
+        if not 'no-gen' in self.options:
+            for module_name in module_names:
+                try:
+                    self.recursive_generate_module_doc(module_name)
+                except GenerateDocError:
+                    pass 
+        list(generate_docs(self.generate_module_doc, module_names))
+        list(generate_docs(self.generate_script_doc, scripts))
+        
+        print >> sys.stderr, "Scripts: %s" % scripts
+        
+        module_rows = list(generate_docs(self.module_row, module_names)) 
+        script_rows = list(generate_docs(self.script_row, scripts))
         
         # Create table
-        table = self.get_table(script_rows=script_rows, module_rows=module_rows)
+        #table = self.get_table(script_rows=script_rows, module_rows=module_rows)
+        
+        print >> sys.stderr, "Script rows: %s" % script_rows
         
         # Create toc for all names in table
-        toc = self.create_toc([name for name, full_name, _desc in
-                               module_rows + script_rows])
+        toc = self.create_toc([(name, full_name) for name, full_name, _desc in
+                               (script_rows + module_rows)])
         
-        return table + toc
+        return [toc] 
     
     def templating_environment(self):
         """Jinja2 templating environment.
@@ -123,7 +139,7 @@ class Sphinkydoc(Directive):
                             os.path.join(os.path.dirname(__file__) + "/../",
                                          'templates')
                         )]
-        print >> sys.stderr, template_dirs
+        #print >> sys.stderr, template_dirs
         #if builder is not None:
         #    # allow the user to override the templates
         #    template_loader = BuiltinTemplateLoader()
@@ -139,13 +155,14 @@ class Sphinkydoc(Directive):
         
         """
         tocnode = addnodes.toctree()
-        tocnode['includefiles'] = names
-        tocnode['entries'] = [(None, name) for name in names]
-        tocnode['maxdepth'] = -1
+        tocnode['includefiles'] = [name for short_name, name in names]
+        print >> sys.stderr, "Create toc for %s " % names
+        tocnode['entries'] = [(short_name, name) for short_name, name in names]
+        tocnode['maxdepth'] = 1
         tocnode['glob'] = None
         return tocnode
     
-    def iter_generate_module_doc(self, module_name):
+    def recursive_generate_module_doc(self, module_name):
         """Iteratively generates module documentation for all submodules,
         and subpackages.
         
@@ -164,13 +181,12 @@ class Sphinkydoc(Directive):
             pass
         
         for submodule_name in get_submodules(module):
-            self.iter_generate_module_doc(_name + "." + submodule_name)
+            self.recursive_generate_module_doc(_name + "." + submodule_name)
     
     def generate_module_doc(self, module_name):
         """Generates documentation for module or package.
         
         :param module_name: Full name of the module.
-        :returns: reStructuredText tuple that can be used in tables.
          
         """
         
@@ -183,27 +199,53 @@ class Sphinkydoc(Directive):
         template = self.tenv.get_template("module.rst")
         
         # Create directory for module_name
-        if not os.path.exists(module_name):  
-            os.mkdir(module_name)
-            
+        #if not os.path.exists(module_name):  
+        #    os.mkdir(module_name)
+        print >> sys.stderr, "Mod name: %s, fullname: %s" % (module_name, name)
         tcontext = {'module': module_name, 'fullname' : name }
         tcontext.update(members)
             
         # Write template
-        file_ = open(os.path.join(name, "index.rst"), 'w+')
+        file_ = open("%s.rst" % name, 'w+')
         file_.write(template.render(tcontext))
         file_.close()
-                    
-        return module_name, name, "Doc..."
-    
-    def generate_script_doc(self, script):
+
+    def generate_script_doc(self, script_path):
         """Generates documentation for script.
         
-        :param module: Path to script.
+        :param script_path: Path to script.
         :returns: reStructuredText tuple that can be used in tables.
          
         """
-        return os.path.basename(script), script, "doc..."
+        script = os.path.basename(script_path)
+        file_ = open("%s.rst" % script, 'w+')
+        file_.write("""
+:ref:`%s`
+======================
+        """ % script)
+        file_.close()
+        
+    def module_row(self, module_name):
+        """Module rows in table.
+        
+        :returns: reStructuredText tuple that can be used in tables.
+        
+        """
+        try:
+            module, name = import_by_name(module_name)
+        except ImportError, e:
+            raise GenerateDocError("Failed to import '%s': %s" % (module_name, e))
+        
+        return module_name.split(".")[-1], name, "Doc..."
+    
+    def script_row(self, script_path):
+        """Script rows in table.
+        
+        :returns: reStructuredText tuple that can be used in tables.
+        
+        """
+        script = os.path.basename(script_path)
+        return script, script, "doc..."
     
     def get_table(self, module_rows=None, script_rows=None):
         """Get rst table.""" 
@@ -241,7 +283,7 @@ class Sphinkydoc(Directive):
         for name, full_name, desc in script_rows:
             append_row(":exec:`%s`" % name, desc)
         
-        return [table]
+        return table
 
 
 class GenerateDocError(Exception):

@@ -2,6 +2,14 @@
 
 Documentation
 =============
+  
+{% if scripts %}
+.. rubric:: Scripts and executables
+
+.. sphinkydoc::
+	:scripts: {% for script in scripts %}"{{ script }}" {% endfor %}
+{% endif %}
+
 
 {% if modules %}
 .. rubric:: Modules and packages
@@ -10,16 +18,13 @@ Documentation
 	:modules: {% for module in modules %}{{ module }} {% endfor %}
 {% endif %}
 
-  
-{% if scripts %}
-.. rubric:: Scripts
 
-.. sphinkydoc::
-	:scripts: sphinkydoc.py second.py "third script.py"
-{% endif %}
 
+
+.. rubric:: About
 
 .. toctree::
    :maxdepth: 2
 
    copying
+   glossary

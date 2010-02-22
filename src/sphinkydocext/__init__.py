@@ -65,9 +65,9 @@ __all__ = ['directives', 'utils', 'setup']
 #    
 def setup(app):
     from sphinkydocext.directives.usage import usage_directive
-    from sphinkydocext.directives.sphinkydoc import Sphinkydoc
+    from sphinkydocext.directives.sphinkydoc import Sphinkydoc, sphinkydoc_toc
     #app.setup_extension('sphinkydocext')
-    #app.add_node(sphinkydoc_table)
+    app.add_node(sphinkydoc_toc)
 #    app.connect('doctree-read', process_sphinkydoc_toc)
 #    app.connect('builder-inited', process_generate_options)
     app.add_directive('usage', usage_directive, 1, (0, 1, 1))

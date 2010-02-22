@@ -126,9 +126,11 @@ def run_sphinx_build(sphinx_conf_dir, dry_run=False,
     old_dir = os.getcwd()
     os.chdir(sphinx_conf_dir)
     cmd1 = ["python", sphinx_build, ".", "../html"]
-    cmd2 = ["python", sphinx_build, ".", "../html"]
+    cmd2 = ["python", sphinx_build, "-E", ".", "../html"]
     log.info("Sphinx build, inside directory %s" % os.getcwd())
     log.info("Running sphinx-build (1): %s" % subprocess.list2cmdline(cmd1))
+    # TODO: PERFORMANCE: One could implement generation in this point, so the
+    # second pass would not be required...
     log.info("Running sphinx-build (2): %s" % subprocess.list2cmdline(cmd2))
     
     if not dry_run:

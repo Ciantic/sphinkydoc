@@ -1,5 +1,5 @@
 :mod:`{{ fullname }}`
-========================
+==================================================
 
 .. automodule:: {{ fullname }}
 
@@ -9,9 +9,8 @@
 .. rubric:: Submodules
 
 .. sphinkydoc::
+	:no-gen:
 	:modules: {% for submodule in all_modules %}{{ fullname }}.{{ submodule }} {% endfor %}
 
-
-{% for submodule in all_modules %}{{ submodule }} {% endfor %}
 {% endif %}
 {% endblock %}
