@@ -22,6 +22,14 @@ def topic_files(files):
 def about_files(files):
     return list(filter((lambda f: f in ABOUT_FILES), files))
 
+def docs_files(path):
+    """Docs files, relative to path.
+    
+    :returns: List of .rst files in path.
+    
+    """
+    pass
+
 def pre_template(env):
     env.globals['topic_files'] = topic_files
     env.globals['about_files'] = about_files        

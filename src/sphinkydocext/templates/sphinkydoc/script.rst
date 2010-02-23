@@ -1,6 +1,8 @@
-.. _{{ script }}:
+.. _{{ script_name }}:
 
-{{ script }}
+{{ script_name }}
 ===================
 
-Script documentation here...
+::
+
+{{ indent(4, help) }}

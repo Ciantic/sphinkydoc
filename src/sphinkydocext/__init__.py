@@ -64,6 +64,11 @@ __all__ = ['directives', 'utils', 'setup']
 #                              base_path=app.srcdir)
 #    
 def setup(app):
+    """Setups the Sphinx extension.
+    
+    :param app: Sphinx app.
+    
+    """
     from sphinkydocext.directives.usage import usage_directive
     from sphinkydocext.directives.sphinkydoc import Sphinkydoc, sphinkydoc_toc
     #app.setup_extension('sphinkydocext')

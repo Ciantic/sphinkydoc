@@ -1,7 +1,7 @@
-{% extends "sphinkydoc/magic.rst" %}
-{% block content %}
+.. _{{ magic_name }}:
+
 {{ header }}
 ==============================
+::
 
 {{ indent(4, magic) }}
-{% endblock %}

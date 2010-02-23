@@ -1,6 +1,5 @@
 .. include:: README.rst
 
-
 Documentation
 =============
 

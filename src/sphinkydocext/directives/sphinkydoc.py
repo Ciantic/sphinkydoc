@@ -6,13 +6,18 @@ from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
 from jinja2 import FileSystemLoader
 from jinja2.sandbox import SandboxedEnvironment
+from pkgutil import iter_modules # TODO: DEPENDENCY: Python 2.5
 from sphinkydocext.utils import quote_split
 from sphinx import addnodes
 from sphinx.ext.autosummary import import_by_name
 from sphinx.util.compat import Directive
+from subprocess import Popen, PIPE
 import os
-from pkgutil import iter_modules # TODO: DEPENDENCY: Python 2.5
 import sys
+import inspect
+
+__all__ = ['TemplatePython', 'templating_environment', 'get_submodules',
+           'get_module_members', 'sphinkydoc_toc', 'Sphinkydoc']
 
 class TemplatePython(object):
     def __init__(self, template_env, template_pythons=None):
@@ -76,6 +81,21 @@ def templating_environment(template_dirs=None):
         
     return tenv
 
+def _all_filter(module, use_all=True):
+    custom_all = lambda m, s: not s.startswith("_")
+    
+    if use_all:
+        try:
+            all_ = module.__all__
+        except AttributeError:
+            if use_all:
+                print >> sys.stderr, ("Module %s is missing __all__, "
+                                      "falling back to public members." \
+                                      % module.__name__)
+        else:
+            custom_all = lambda m, s: s in all_
+    return custom_all
+
 def get_submodules(module, use_all=True, custom_all=None):
     """Get submodules of module.
     
@@ -85,18 +105,7 @@ def get_submodules(module, use_all=True, custom_all=None):
     
     """
     if not custom_all:
-        custom_all = lambda m, s: True
-        
-        if use_all:
-            try:
-                all_ = module.__all__
-            except AttributeError:
-                if use_all:
-                    print >> sys.stderr, ("Module %s is missing __all__, "
-                                          "falling back to public members." \
-                                          % module.__name__)
-            else:
-                custom_all = lambda m, s: s in all_
+        custom_all = _all_filter(module, use_all)
         
     # Retrieve all submodules
     if hasattr(module, "__path__"): 
@@ -110,10 +119,42 @@ def get_module_members(module):
     Crawls the module for members.
     
     """
+    all_filter = _all_filter(module, use_all=True)
+    
+    def custom_all(n):
+        return all_filter(module, n)
     
     all_submodules = list(get_submodules(module))
+    modules = all_submodules
+    
+    all_classes = []
+    all_functions = []
+    all_attributes = []
+    all_members = []
+    
+    for name in dir(module):
+        obj = getattr(module, name)
+        all_members.append(name)
+        
+        if inspect.isclass(obj):
+            all_classes.append(name)
+        elif inspect.isfunction(obj):
+            all_functions.append(name)
+        elif inspect.ismodule(obj):
+            pass
+        else:
+            all_attributes.append(name)
             
-    return {'all_modules': all_submodules, 'modules' : all_submodules}
+    functions = filter(custom_all, all_functions)
+    classes = filter(custom_all, all_classes)
+    attributes = filter(custom_all, all_attributes)
+    members = filter(custom_all, all_members)
+            
+    return {'all_modules': all_submodules, 'modules' : modules,
+            'all_classes' : all_classes, 'classes' : classes,
+            'all_functions' : all_functions, 'functions' : functions,
+            'all_attributes' : all_attributes, 'attributes' : attributes,
+            'all_members' : all_members, 'members' : members,}
 
 
 class sphinkydoc_toc(nodes.comment):
@@ -123,13 +164,11 @@ class sphinkydoc_toc(nodes.comment):
 class Sphinkydoc(Directive):
     """Sphinkydoc directive.
     
-    .. usage::
+    Usage in reStructuredText::
     
-        ::
-        
-            .. sphinkydoc::
-                :scripts: firstscript.py secondscript.py "third script.py"
-                :modules: firstmod secondmod
+        .. sphinkydoc::
+            :scripts: firstscript.py secondscript.py "third script.py"
+            :modules: firstmod secondmod
     
     """
     
@@ -237,10 +276,10 @@ class Sphinkydoc(Directive):
         # Create directory for module_name
         #if not os.path.exists(module_name):  
         #    os.mkdir(module_name)
-        print >> sys.stderr, "Mod name: %s, fullname: %s" % (module_name, name)
+        # print >> sys.stderr, "Mod name: %s, fullname: %s" % (module_name, name)
         tcontext = {'module': module_name, 'fullname' : name }
         tcontext.update(members)
-            
+        
         # Write template
         file_ = open("%s.rst" % name, 'w+')
         file_.write(template.render(tcontext))
@@ -253,12 +292,26 @@ class Sphinkydoc(Directive):
         :returns: reStructuredText tuple that can be used in tables.
          
         """
-        script = os.path.basename(script_path)
+        script_name = os.path.basename(script_path)
+        
+        help = ""
+        
+        cmd = ["python", script_path, "--help"]
+        
+        try:
+            p = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        except os.error:
+            return
+        else:
+            help, _stderr = p.communicate()
+            
+        help = help.replace("\r", "")
         
         template = self.tenv.get_template("sphinkydoc/script.rst")
-        tcontext = {'script_path' : script_path, 'script' : script}
+        tcontext = {'script_path' : script_path, 'script_name' : script_name, 
+                    'help' : help}
         
-        file_ = open("%s.rst" % script, 'w+')
+        file_ = open("%s.rst" % script_name, 'w+')
         file_.write(template.render(tcontext))
         file_.close()
         
@@ -283,44 +336,6 @@ class Sphinkydoc(Directive):
         """
         script = os.path.basename(script_path)
         return script, script, "doc..."
-#    
-#    def get_table(self, module_rows=None, script_rows=None):
-#        """Get rst table.""" 
-#        table_spec = addnodes.tabular_col_spec()
-#        table_spec['spec'] = 'LL'
-#
-#        table = nodes.table('')
-#        
-#        group = nodes.tgroup('', cols=2)
-#        group.append(nodes.colspec('', colwidth=10))
-#        group.append(nodes.colspec('', colwidth=90))
-#        body = nodes.tbody('')
-#        group.append(body)
-#        table.append(group)
-#        
-#        # Geez, who the hell forgot to create high level api for docutils.nodes?
-#        def append_row(*column_texts):
-#            row = nodes.row('')
-#            for text in column_texts:
-#                node = nodes.paragraph('')
-#                vl = ViewList()
-#                vl.append(text, '<sphinkydoc>')
-#                self.state.nested_parse(vl, 0, node)
-#                try:
-#                    if isinstance(node[0], nodes.paragraph):
-#                        node = node[0]
-#                except IndexError:
-#                    pass
-#                row.append(nodes.entry('', node))
-#            body.append(row)
-#        
-#        for name, full_name, desc in module_rows:
-#            append_row(":mod:`%s<%s>`" % (full_name, name), desc)
-#            
-#        for name, full_name, desc in script_rows:
-#            append_row(":exec:`%s`" % name, desc)
-#        
-#        return table
 
 
 class GenerateDocError(Exception):

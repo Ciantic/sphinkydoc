@@ -25,7 +25,10 @@ TEMP_CONFIGURATION_DIR = '_temp'
 
 def copy_tree(src, dst, preserve_mode=1, preserve_times=1, preserve_symlinks=0, 
     update=0, verbose=0, skip_dirs=None, dry_run=0):
-    """Copy an entire directory tree 'src' to a new location 'dst'.  
+    """Copy an entire directory tree 'src' to a new location 'dst'.
+    
+    Modified copy_tree, taken from distutils.dir_util.
+      
     Both 'src' and 'dst' must be directory names.  If 'src' is not a directory,
     raise DistutilsFileError.  If 'dst' does not exist, it is created with
     'mkpath()'.  The end result of the copy is that every file in 'src' is
@@ -72,8 +75,9 @@ def copy_tree(src, dst, preserve_mode=1, preserve_times=1, preserve_symlinks=0,
             if not dry_run:
                 os.symlink(link_dest, dst_name) #@UndefinedVariable
             outputs.append(dst_name)
-        elif os.path.isdir(src_name) and \
-            os.path.dirname(src_name) not in skip_dirs:
+        elif os.path.isdir(src_name):
+            if n in skip_dirs:
+                continue
             
             outputs.extend(
                 copy_tree(src_name, dst_name, preserve_mode, 
@@ -219,15 +223,19 @@ def generate_magic(magic_dir, dst_dir, ext='rst', magic_literals=None,
     
     """
     magic_literals = magic_literals or []
+    magic_files = []
     
     dir_contents = os.listdir(magic_dir)
-    magic_files = []
+    
     for filename in dir_contents:
         if re.match("^[A-Z](\.[A-Za-z]+)?", filename):
             new_filename = filename
+            
             # Add the extension if not there
             if not filename.endswith(ext):
                 new_filename += '.%s' % ext
+                
+            new_filename_wo_ext = new_filename[:-len(ext)-1]
 
             filepath = os.path.join(magic_dir, filename)
             new_filepath = os.path.join(dst_dir, new_filename) 
@@ -235,12 +243,10 @@ def generate_magic(magic_dir, dst_dir, ext='rst', magic_literals=None,
             if not dry_run:
                 shutil.copy(filepath, new_filepath)
                 
-            if filename in magic_literals:
+            if new_filename_wo_ext in magic_literals:
                 magic_literal(new_filepath)
             else:
                 magic(new_filepath)
-            
-            new_filename_wo_ext = new_filename[:-len(ext)-1]
             
             magic_files.append(new_filename_wo_ext)
     
@@ -277,26 +283,31 @@ if __name__ == '__main__':
     
     parser.add_option("-v", "--verbose",
                       dest="verbose", action="store_true", default=True) # TODO: Debug True, Prod False
-    parser.add_option("-n", "--dry-run", 
+    parser.add_option("-n", "--dry-run",
                       dest="dry_run", action="store_true", default=False)
     parser.add_option("-o", "--output-dir",
+                      help="Outputs the html and temp directory to this directory",
                       dest="output", default=os.getcwd())
     parser.add_option("-b", "--sphinx-build-py",
                       dest="sphinx_build", default="sphinx-build.py")
     parser.add_option("-t", "--sphinx-template-dir",
                       dest="sphinxtemplate_dir", default='')
     parser.add_option("-s", "--script",
-                      dest="scripts", action="append", default=[])
+                      dest="scripts", action="append", default=[], 
+                      metavar='SCRIPT')
     parser.add_option("", "--no-validation",
                       dest="validate", action="store_false", default=True)
     parser.add_option("", "--magic-dir",
                       dest="magic_dir", default="../")
     parser.add_option("-l", "--magic-literal",
+                      help="Magic files which are included as literal files, "
+                           "defaults to COPYING, COPYING.LESSER.",
+                      metavar="MAGIC_FILE",
                       dest="magic_literals", action="append", 
                       default=['COPYING', 'COPYING.LESSER'])
     try:
         (options, modules) = parser.parse_args()
-    except:
+    except ValueError:
         parser.print_usage()
         sys.exit(0)
         
@@ -320,6 +331,7 @@ if __name__ == '__main__':
     # Temp directory inside the docs
     temp_dir = os.path.join(options.output, TEMP_CONFIGURATION_DIR)
     magic_dir = os.path.realpath(options.magic_dir)
+    docs_dir = options.output
     
     # Remove old temp directory
     if os.path.isdir(temp_dir):
@@ -328,13 +340,18 @@ if __name__ == '__main__':
     # Copy the template directory to temp directory
     copy_tree(sphinxtemplate_dir, temp_dir, dry_run=options.dry_run)
     
+    # Copy all files from docs dir to temp dir, except html and temp 
+    # directories.
+    copy_tree(docs_dir, temp_dir, skip_dirs=['html', '_temp'])
+    
     # Generate magic files
     magic_files = generate_magic(magic_dir, temp_dir, 
                                  magic_literals=options.magic_literals,
                                  dry_run=options.dry_run)
         
     # Template the temp directory
-    template_dir(temp_dir, file_substs={
+    template_dir(temp_dir, 
+        file_substs={
             'conf.py' : {
                 'project' : sphinx_project,
                 'copyright' : sphinx_copyright,
@@ -346,7 +363,8 @@ if __name__ == '__main__':
             'magic_files' : magic_files,
             'scripts' : map(os.path.realpath, options.scripts),
             'modules' : modules,
-        }, dry_run=options.dry_run)
+        }, 
+        dry_run=options.dry_run)
     
     # Validates the conf.py
     if options.validate:
