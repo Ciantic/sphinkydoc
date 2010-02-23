@@ -14,6 +14,67 @@ import os
 from pkgutil import iter_modules # TODO: DEPENDENCY: Python 2.5
 import sys
 
+class TemplatePython(object):
+    def __init__(self, template_env, template_pythons=None):
+        self._template_env = template_env
+        self._pythons = template_pythons or []
+    
+    def __getattr__(self, name):
+        
+        if name not in ['_template_env', '_pythons']:
+            def curry_template_python(*args, **kwargs):
+                
+                r = []
+                for tp_path, tp in self._pythons:
+                    if not tp.has_key(name):
+                        continue
+                    
+                    w = os.getcwd()
+                    os.chdir(os.path.dirname(tp_path))
+                    r.append((tp_path, tp[name](self._template_env, *args, **kwargs)))
+                    os.chdir(w)
+                
+                return r
+            
+            return curry_template_python
+        
+        return super(TemplatePython, self).__getattr__(name)
+
+def template_python(file_):
+    if os.path.exists(file_):
+        __template = {}
+        execfile(file_, __template)
+        return __template
+    return {}        
+
+def templating_environment(template_dirs=None):
+    """Jinja2 templating environment.
+    
+    :returns: :obj:`jinja2.environment.Environment`
+    
+    """
+    
+    template_dirs_ = [os.path.realpath(
+                        os.path.join(os.path.dirname(__file__) + "/../",
+                                     'templates')
+                     )]
+    
+    if template_dirs is not None:
+        template_dirs_.extend(template_dirs)
+        
+    template_loader = FileSystemLoader(template_dirs_)
+    tenv = SandboxedEnvironment(loader=template_loader)
+    
+    tenv.__tp = TemplatePython(tenv) 
+    
+    # Add all __template.pys
+    for tdir in template_dirs_:
+        tp = os.path.realpath(os.path.join(tdir, "__template.py"))
+        tenv.__tp._pythons.append((tp, template_python(tp)))
+    
+    tenv.__tp.pre_template()
+        
+    return tenv
 
 def get_submodules(module, use_all=True, custom_all=None):
     """Get submodules of module.
@@ -74,13 +135,14 @@ class Sphinkydoc(Directive):
     
     option_spec = {
         'no-gen': directives.unchanged, 
+        'maxdepth': directives.unchanged,
         'scripts': directives.unchanged,
         'modules': directives.unchanged,
     }
     
     def __init__(self, *args, **kwargs):
         super(Sphinkydoc, self).__init__(*args, **kwargs)
-        self.tenv = self.templating_environment()
+        self.tenv = templating_environment()
     
     def run(self):
         """Run the Sphinkydoc rst directive."""
@@ -92,6 +154,9 @@ class Sphinkydoc(Directive):
             
         if 'modules' in self.options:
             module_names = quote_split(self.options['modules'])
+            
+        if 'maxdepth' not in self.options:
+            self.options['maxdepth'] = -1
             
         #print >> sys.stderr, ("module_names %s" % module_names)
         
@@ -112,43 +177,14 @@ class Sphinkydoc(Directive):
         list(generate_docs(self.generate_module_doc, module_names))
         list(generate_docs(self.generate_script_doc, scripts))
         
-        print >> sys.stderr, "Scripts: %s" % scripts
-        
         module_rows = list(generate_docs(self.module_row, module_names)) 
         script_rows = list(generate_docs(self.script_row, scripts))
-        
-        # Create table
-        #table = self.get_table(script_rows=script_rows, module_rows=module_rows)
-        
-        print >> sys.stderr, "Script rows: %s" % script_rows
         
         # Create toc for all names in table
         toc = self.create_toc([(name, full_name) for name, full_name, _desc in
                                (script_rows + module_rows)])
         
         return [toc] 
-    
-    def templating_environment(self):
-        """Jinja2 templating environment.
-        
-        :returns: :obj:`jinja2.environment.Environment`
-        
-        """
-        # create our own templating environment
-        template_dirs = [os.path.realpath(
-                            os.path.join(os.path.dirname(__file__) + "/../",
-                                         'templates')
-                        )]
-        #print >> sys.stderr, template_dirs
-        #if builder is not None:
-        #    # allow the user to override the templates
-        #    template_loader = BuiltinTemplateLoader()
-        #    template_loader.init(builder, dirs=template_dirs)
-        #else:
-        #    if template_dir:
-        #        template_dirs.insert(0, template_dir)
-        template_loader = FileSystemLoader(template_dirs)
-        return SandboxedEnvironment(loader=template_loader)
             
     def create_toc(self, names):
         """Create toc node entries for names.
@@ -158,7 +194,7 @@ class Sphinkydoc(Directive):
         tocnode['includefiles'] = [name for short_name, name in names]
         print >> sys.stderr, "Create toc for %s " % names
         tocnode['entries'] = [(short_name, name) for short_name, name in names]
-        tocnode['maxdepth'] = 1
+        tocnode['maxdepth'] = self.options['maxdepth']
         tocnode['glob'] = None
         return tocnode
     
@@ -196,7 +232,7 @@ class Sphinkydoc(Directive):
             raise GenerateDocError("Failed to import '%s': %s" % (module_name, e))
         
         members = get_module_members(module)
-        template = self.tenv.get_template("module.rst")
+        template = self.tenv.get_template("sphinkydoc/module.rst")
         
         # Create directory for module_name
         #if not os.path.exists(module_name):  
@@ -218,11 +254,12 @@ class Sphinkydoc(Directive):
          
         """
         script = os.path.basename(script_path)
+        
+        template = self.tenv.get_template("sphinkydoc/script.rst")
+        tcontext = {'script_path' : script_path, 'script' : script}
+        
         file_ = open("%s.rst" % script, 'w+')
-        file_.write("""
-:ref:`%s`
-======================
-        """ % script)
+        file_.write(template.render(tcontext))
         file_.close()
         
     def module_row(self, module_name):
@@ -246,44 +283,44 @@ class Sphinkydoc(Directive):
         """
         script = os.path.basename(script_path)
         return script, script, "doc..."
-    
-    def get_table(self, module_rows=None, script_rows=None):
-        """Get rst table.""" 
-        table_spec = addnodes.tabular_col_spec()
-        table_spec['spec'] = 'LL'
-
-        table = nodes.table('')
-        
-        group = nodes.tgroup('', cols=2)
-        group.append(nodes.colspec('', colwidth=10))
-        group.append(nodes.colspec('', colwidth=90))
-        body = nodes.tbody('')
-        group.append(body)
-        table.append(group)
-        
-        # Geez, who the hell forgot to create high level api for docutils.nodes?
-        def append_row(*column_texts):
-            row = nodes.row('')
-            for text in column_texts:
-                node = nodes.paragraph('')
-                vl = ViewList()
-                vl.append(text, '<sphinkydoc>')
-                self.state.nested_parse(vl, 0, node)
-                try:
-                    if isinstance(node[0], nodes.paragraph):
-                        node = node[0]
-                except IndexError:
-                    pass
-                row.append(nodes.entry('', node))
-            body.append(row)
-        
-        for name, full_name, desc in module_rows:
-            append_row(":mod:`%s<%s>`" % (full_name, name), desc)
-            
-        for name, full_name, desc in script_rows:
-            append_row(":exec:`%s`" % name, desc)
-        
-        return table
+#    
+#    def get_table(self, module_rows=None, script_rows=None):
+#        """Get rst table.""" 
+#        table_spec = addnodes.tabular_col_spec()
+#        table_spec['spec'] = 'LL'
+#
+#        table = nodes.table('')
+#        
+#        group = nodes.tgroup('', cols=2)
+#        group.append(nodes.colspec('', colwidth=10))
+#        group.append(nodes.colspec('', colwidth=90))
+#        body = nodes.tbody('')
+#        group.append(body)
+#        table.append(group)
+#        
+#        # Geez, who the hell forgot to create high level api for docutils.nodes?
+#        def append_row(*column_texts):
+#            row = nodes.row('')
+#            for text in column_texts:
+#                node = nodes.paragraph('')
+#                vl = ViewList()
+#                vl.append(text, '<sphinkydoc>')
+#                self.state.nested_parse(vl, 0, node)
+#                try:
+#                    if isinstance(node[0], nodes.paragraph):
+#                        node = node[0]
+#                except IndexError:
+#                    pass
+#                row.append(nodes.entry('', node))
+#            body.append(row)
+#        
+#        for name, full_name, desc in module_rows:
+#            append_row(":mod:`%s<%s>`" % (full_name, name), desc)
+#            
+#        for name, full_name, desc in script_rows:
+#            append_row(":exec:`%s`" % name, desc)
+#        
+#        return table
 
 
 class GenerateDocError(Exception):

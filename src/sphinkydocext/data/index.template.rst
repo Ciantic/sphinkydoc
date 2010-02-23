@@ -1,7 +1,18 @@
-.. include:: ../../README.rst
+.. include:: README.rst
+
 
 Documentation
 =============
+
+{% if topic_files(magic_files) %}
+.. rubric:: Topics
+
+.. toctree::
+   :maxdepth: 2
+   {% for topic_file in topic_files(magic_files) %}
+   {{ topic_file }}
+   {% endfor %}
+{% endif %}
   
 {% if scripts %}
 .. rubric:: Scripts and executables
@@ -19,12 +30,12 @@ Documentation
 {% endif %}
 
 
-
-
+{% if about_files(magic_files) %}
 .. rubric:: About
 
 .. toctree::
-   :maxdepth: 2
 
-   copying
-   glossary
+   {% for about_file in about_files(magic_files) %}
+   {{ about_file }}
+   {% endfor %}
+{% endif %}

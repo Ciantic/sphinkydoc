@@ -20,16 +20,16 @@ scripts = [{% for script in scripts %} "{{ script }}", {% endfor %}]
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
               'sphinx.ext.autosummary', 'sphinkydocext']
 
-templates_path = ['_templates']
+templates_path = ['templates']
 source_suffix = '.rst'
 master_doc = 'index'
-exclude_trees = ['_build', '_templates']
+exclude_trees = ['templates']
 pygments_style = 'sphinx'
 
 # HTML ---------------------------------------
 
 html_theme = 'default'
-html_static_path = ['_static']
+html_static_path = ['static']
 
 # Autodoc ------------------------------------
 
