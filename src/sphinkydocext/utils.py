@@ -1,6 +1,8 @@
 """Utils for sphinkydoc"""
 import re
 
+__all__ = ['quote_split']
+
 def quote_split(str):
     """Splits the string by quotes.
     

@@ -14,55 +14,8 @@ __license__ = "FreeBSD, see COPYING"
 from sphinkydocext import directives, utils
 from docutils import nodes
 
-__all__ = ['directives', 'utils', 'setup']
+__all__ = ['directives', 'utils', 'setup', 'templating']
 
-#def process_sphinkydoc_toc(app, doctree):
-#    """
-#    Insert items described in autosummary:: to the TOC tree, but do
-#    not generate the toctree:: list.
-#    """
-#    env = app.builder.env
-#    crawled = {}
-#    def crawl_toc(node, depth=1):
-#        crawled[node] = True
-#        for j, subnode in enumerate(node):
-#            print >> sys.stderr, "Enumerating node..."
-#            try:
-#                pass
-#                #if (isinstance(subnode, autosummary_toc)
-#                #    and isinstance(subnode[0], addnodes.toctree)):
-#                #    env.note_toctree(env.docname, subnode[0])
-#                #    continue
-#            except IndexError:
-#                continue
-#            if not isinstance(subnode, nodes.section):
-#                continue
-#            if subnode not in crawled:
-#                crawl_toc(subnode, depth+1)
-#    crawl_toc(doctree)
-#
-#def process_generate_options(app):
-#    genfiles = app.config.autosummary_generate
-#
-#    ext = app.config.source_suffix
-#
-#    if genfiles and not hasattr(genfiles, '__len__'):
-#        env = app.builder.env
-#        genfiles = [x + ext for x in env.found_docs
-#                    if os.path.isfile(env.doc2path(x))]
-#
-#    if not genfiles:
-#        return
-#
-#    from sphinx.ext.autosummary.generate import generate_autosummary_docs
-#
-#    genfiles = [genfile + (not genfile.endswith(ext) and ext or '')
-#                for genfile in genfiles]
-#
-#    generate_autosummary_docs(genfiles, builder=app.builder,
-#                              warn=app.warn, info=app.info, suffix=ext,
-#                              base_path=app.srcdir)
-#    
 def setup(app):
     """Setups the Sphinx extension.
     

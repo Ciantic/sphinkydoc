@@ -1,3 +1,9 @@
+/* Hide the prefix */
+.descclassname {
+	display: none;
+}
+
+
 /* Vertical list of field names, seems too big ********** */
 th.field-name {
     font-size: 100% !important;
@@ -24,7 +30,7 @@ tt {
     margin-bottom: 0.7em;
 }
 
-/* Box ************************************************** */
+/* Box ************************************************** 
 dl {
     border: 3px solid #D9E7EF;
     border-radius: 5px;
@@ -49,7 +55,7 @@ dt:target, .highlight {
     color: black;
 }
 
-/* Sub box ********************************************** */
+/* Sub box ********************************************** 
 dl dl {
     border-color: #EBEBEB;
 }

@@ -1,5 +1,5 @@
-:mod:`{{ fullname }}`
-==================================================
+{{ module_split(fullname) }}
+{{ module_split(fullname)|length*"=" }}
 
 .. automodule:: {{ fullname }}
 
