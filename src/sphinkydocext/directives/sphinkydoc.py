@@ -89,7 +89,7 @@ class Sphinkydoc(Directive):
         """
         tocnode = addnodes.toctree()
         tocnode['includefiles'] = [name for short_name, name in names]
-        print >> sys.stderr, "Create toc for %s " % names
+        # print >> sys.stderr, "Create toc for %s " % names
         tocnode['entries'] = [(short_name, name) for short_name, name in names]
         tocnode['maxdepth'] = self.options['maxdepth']
         tocnode['glob'] = None
