@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 # Sphinkydoc template file for sphinx conf.py.
+
 # pylint: disable-msg-cat=WCREFI
  
 import sys
 import os
 
-{% for module in modules %} 
+{% for module in modules %}
 import {{ module }}
 {% endfor %}
 
@@ -51,7 +52,7 @@ sphinkydoc_scripts = [{% for script in scripts %}'{{ script }}', {% endfor %}]
 # sphinkydoc_magic_included = ['README']
 
 # Magic files that are in About -toc
-#sphinkydoc_magic_about = ['COPYING', 'COPYING.LIB', 'COPYING.LESSER', 'LICENSE', 
+# sphinkydoc_magic_about = ['COPYING', 'COPYING.LIB', 'COPYING.LESSER', 'LICENSE', 
 #                          'AUTHORS', 'THANKS']
 
 def non_init_skip(app, what, name, obj, skip, options):

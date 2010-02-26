@@ -1,14 +1,21 @@
+{{ module_split(fullname)|length * "'" }}
 {{ module_split(fullname) }}
-{{ module_split(fullname)|length * "=" }}
+{{ module_split(fullname)|length * "'" }}
 
 .. automodule:: {{ fullname }}
 
-{% block modules %}
-{% if all_modules %}	
+{% if all_modules or members %}
+Members
+=======
+{% endif %}
 
-.. rubric:: Submodules
+{% block modules %}
+{% if all_modules %}
+
+.. rubric:: Submodules	
 
 .. sphinkydoc-modules::
+	:maxdepth: 1
 	{% for submodule in all_modules %}
 	{{ fullname }}.{{ submodule }}
 	{% endfor %}
@@ -18,6 +25,7 @@
 
 {% block members %}
 {% if members %}
+
 .. rubric:: Members
 
 .. autosummary::
@@ -26,23 +34,15 @@
 	{% for item in members %}
 	{{ item }}
 	{% endfor %}
+
 {% endif %}
 {% endblock %}
-
-{% block attributes %}
-{% if attributes %}	
-.. rubric:: Attributes
-
-{% for attr in attributes %}
-.. autoattribute:: {{ fullname }}.{{ attr }}
-{% endfor %}
-{% endif %}
-{% endblock %}
-
 
 {% block datas %}
 {% if datas %}	
-.. rubric:: Attributes
+
+{# datas are confusing name, I decided to call them Attributes #}
+.. rubric:: Attribute definitions
 
 {% for data in datas %}
 .. autodata:: {{ fullname }}.{{ data }}
@@ -53,7 +53,7 @@
 
 {% block functions %}
 {% if functions %}
-.. rubric:: Functions
+.. rubric:: Function definitions
 
 {% for item in functions %}
 .. autofunction:: {{ item }}
@@ -65,7 +65,7 @@
 {% block classes %}
 {% if classes %}
 
-.. rubric:: Classes
+.. rubric:: Class definitions
 
 {% for item in classes %}
 .. autoclass:: {{ item }}()

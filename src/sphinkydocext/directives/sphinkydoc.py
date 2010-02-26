@@ -3,16 +3,11 @@
 """Sphinkydoc directive"""
 from docutils import nodes
 from docutils.parsers.rst import directives
-from sphinkydocext.templating import templating_environment, get_module_members, \
-    get_submodules
-from sphinkydocext.utils import quote_split
+from sphinkydocext.templating import templating_environment
 from sphinx import addnodes
 from sphinx.ext.autosummary import import_by_name
 from sphinx.util.compat import Directive
 import os
-import sys
-
-__all__ = ['sphinkydoc_toc', 'Sphinkydoc']
 
 class sphinkydoc_toc(nodes.comment):
     """Dummy toc node."""
@@ -23,15 +18,14 @@ def create_toc(names, maxdepth=-1):
     
     """
     tocnode = addnodes.toctree()
-    tocnode['includefiles'] = [name for short_name, name in names]
-    # print >> sys.stderr, "Create toc for %s " % names
+    tocnode['includefiles'] = [name for _short_name, name in names]
     tocnode['entries'] = [(short_name, name) for short_name, name in names]
     tocnode['maxdepth'] = maxdepth
     tocnode['glob'] = None
     return tocnode
 
 class SphinkydocModules(Directive):
-    """Sphinkydoc modules directive.
+    """Sphinkydoc modules toc-tree directive.
     
     Usage in reStructuredText::
     
@@ -57,32 +51,29 @@ class SphinkydocModules(Directive):
     def run(self):
         """Run the Sphinkydoc rst directive."""
         
-        # Sphinx configuration env:
-        env = self.state.document.settings.env
-        
         module_names = self.content
+        maxdepth = -1
         
-        if 'maxdepth' not in self.options:
-            self.options['maxdepth'] = -1
+        if 'maxdepth' in self.options:
+            maxdepth = int(self.options['maxdepth'])
             
         module_rows = [self.module_row(m) for m in module_names if m] 
         
         # Create toc for all names in table
         toc = create_toc([(name, full_name) 
                           for name, full_name in module_rows], 
-                          self.options['maxdepth'])
+                          maxdepth=maxdepth)
         
         return [toc]        
     
-
     def module_row(self, module_name):
         """Module rows in table.
         
-        :returns: reStructuredText tuple that can be used in tables.
+        :returns: reStructuredText tuple that can be used in toc.
         
         """
         try:
-            module, name = import_by_name(module_name)
+            _module, name = import_by_name(module_name)
         except ImportError, e:
             raise e #TODO: We probably want to supress the error!
         
@@ -90,13 +81,15 @@ class SphinkydocModules(Directive):
 
 
 class SphinkydocScripts(Directive):
-    """Sphinkydoc directive.
+    """Sphinkydoc scripts toc-tree directive.
     
     Usage in reStructuredText::
     
-        .. sphinkydoc::
-            :scripts: firstscript.py secondscript.py "third script.py"
-            :modules: firstmod secondmod
+        .. sphinkydoc-scripts::
+        
+            firstscript.py 
+            secondscript.py 
+            ../src/third script.py
     
     """
 
@@ -115,25 +108,24 @@ class SphinkydocScripts(Directive):
         """Run the Sphinkydoc rst directive."""
         
         script_paths = self.content
+        maxdepth = -1
         
-        if 'maxdepth' not in self.options:
-            self.options['maxdepth'] = -1
+        if 'maxdepth' in self.options:
+            maxdepth = self.options['maxdepth']
             
         script_rows = [self.script_row(s) for s in script_paths if s] 
         
         # Create toc for all names in table
         toc = create_toc([(name, full_name) 
                           for name, full_name in script_rows], 
-                          self.options['maxdepth'])
+                          maxdepth=maxdepth)
         
-        return [toc] 
-        
-        return [toc] 
+        return [toc]
     
     def script_row(self, script_path):
         """Script rows in table.
         
-        :returns: reStructuredText tuple that can be used in tables.
+        :returns: reStructuredText tuple that can be used in toc.
         
         """
         script = os.path.basename(script_path)

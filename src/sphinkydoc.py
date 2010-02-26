@@ -1,26 +1,27 @@
 """SphinkyDoc script"""
-#from string import Template
-import subprocess
-import shutil
+
+DESCRIPTION = """Sphinx automated documentation generator and builder script.
+Main purpose is to generate documentation for small projects, which usually does
+not require external written documents."""
+
+from jinja2.exceptions import TemplateError
+from sphinkydocext.directives.sphinkydoc import templating_environment
+from sphinkydocext.utils import copy_tree
 import logging
 import optparse
-import sys
-import sphinkydocext
-from sphinkydocext.utils import copy_tree
-from sphinkydocext.directives.sphinkydoc import templating_environment
-from distutils.dir_util import mkpath
 import os
-
-#from jinja2 import Template
-from jinja2 import FileSystemLoader
-from jinja2.sandbox import SandboxedEnvironment
-from jinja2.exceptions import TemplateError
 import re
+import shutil
+import sphinkydocext
+import subprocess
+import sys
+
 
 logging.basicConfig()
 log = logging.getLogger("sphinkydoc")
 
-DYNAMIC_SPHINX_DIR = 'data'
+DYNAMIC_SPHINX_DIR = os.path.join(\
+    os.path.dirname(sphinkydocext.__file__), 'data')
 CONFIG_FILENAME = 'conf.py'
 TEMP_CONFIGURATION_DIR = '_temp'
 
@@ -55,7 +56,7 @@ def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
     template_env = templating_environment(template_dirs=[template_dir])
     
     # Loop through all files recursively in template directory
-    for dirpath, dirnames, filenames in os.walk(template_dir):
+    for dirpath, _dirnames, filenames in os.walk(template_dir):
         for filename in filenames:
             # Is valid template
             if not valid_template_filename(filename):
@@ -104,16 +105,16 @@ def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
     
     log.info("Directory templated.")
 
-def _magic(filepath, template_file, context=None):
+def _caps(filepath, template_file, context=None):
     """Turns file to reStructuredText literal file.
     
     """
     context = context or {}
-    magic_name = os.path.basename(os.path.splitext(filepath)[0])
+    caps_name = os.path.basename(os.path.splitext(filepath)[0])
     
     context.update({
-        'magic_name' : magic_name, 
-        'magic' :  open(filepath, 'r').read(),
+        'caps_name' : caps_name, 
+        'caps' :  open(filepath, 'r').read(),
     })
     
     tenv = templating_environment()
@@ -124,16 +125,16 @@ def _magic(filepath, template_file, context=None):
     f.write(tc)
     f.close()
     
-def magic(filepath):
-    """Preprocesses magic files by "sphinkydoc/magic.rst" jinja2 template.
+def caps(filepath):
+    """Preprocesses caps files by "sphinkydoc/caps.rst" jinja2 template.
     
-    :path filepath: Path to the magic file.
+    :path filepath: Path to the caps file.
     
     """
-    _magic(filepath, "sphinkydoc/magic.rst")
+    _caps(filepath, "sphinkydoc/caps.rst")
 
-def magic_literal(filepath, header=None):
-    """Preprocesses magic files by "sphinkydoc/magic_literal.rst" jinja2 
+def caps_literal(filepath, header=None):
+    """Preprocesses caps files by "sphinkydoc/caps_literal.rst" jinja2 
     template.
     
     This assumes the given file is *not* in reStructuredText format and should
@@ -148,28 +149,28 @@ def magic_literal(filepath, header=None):
     if header is None:
         header = os.path.basename(os.path.splitext(filepath)[0])
     
-    _magic(filepath, "sphinkydoc/magic_literal.rst", {'header' : header})
+    _caps(filepath, "sphinkydoc/caps_literal.rst", {'header' : header})
 
-def generate_magic(magic_dir, dst_dir, ext='rst', magic_literals=None, 
+def generate_caps(caps_dir, dst_dir, ext='rst', caps_literals=None, 
                    dry_run=False):
-    """Copies magic files from ``magic_dir`` to destination directory.
+    """Copies caps files from ``caps_dir`` to destination directory.
     
-    Magic files are files such as INSTALL, COPYING, README, which contain 
+    Caps files are files such as INSTALL, COPYING, README, which contain 
     documentation worthy content outside docs directory.
     
-    :param magic_dir: Directory where magic files reside.
-    :param dst_dir: Destination directory where magic files are *copied*.
-    :param ext: Enforce all magic files to be in this extension.
-    :param magic_literals: Magic files that are treated as literal files.
+    :param caps_dir: Directory where caps files reside.
+    :param dst_dir: Destination directory where caps files are *copied*.
+    :param ext: Enforce all caps files to be in this extension.
+    :param caps_literals: Caps files that are treated as literal files.
     :param dry_run: Dry run only, no copying or other harmful changes.
     
     :returns: Dictionary of extensionless filenames to filename with extension. 
     
     """
-    magic_literals = magic_literals or []
-    magic_files = []
+    caps_literals = caps_literals or []
+    caps_files = []
     
-    dir_contents = os.listdir(magic_dir)
+    dir_contents = os.listdir(caps_dir)
     
     for filename in dir_contents:
         if re.match("^[A-Z](\.[A-Za-z]+)?", filename):
@@ -181,20 +182,20 @@ def generate_magic(magic_dir, dst_dir, ext='rst', magic_literals=None,
                 
             new_filename_wo_ext = new_filename[:-len(ext)-1]
 
-            filepath = os.path.join(magic_dir, filename)
+            filepath = os.path.join(caps_dir, filename)
             new_filepath = os.path.join(dst_dir, new_filename) 
             
             if not dry_run:
                 shutil.copy(filepath, new_filepath)
                 
-            if new_filename_wo_ext in magic_literals:
-                magic_literal(new_filepath)
+            if new_filename_wo_ext in caps_literals:
+                caps_literal(new_filepath)
             else:
-                magic(new_filepath)
+                caps(new_filepath)
             
-            magic_files.append(new_filename_wo_ext)
+            caps_files.append(new_filename_wo_ext)
     
-    return magic_files
+    return caps_files
                     
 def run_sphinx_build(sphinx_conf_dir, dry_run=False, 
                      sphinx_build='sphinx-build.py'):
@@ -221,32 +222,39 @@ def run_sphinx_build(sphinx_conf_dir, dry_run=False,
     os.chdir(old_dir)
 
 if __name__ == '__main__':
-    parser = optparse.OptionParser("""sphinkydoc.py <MODULE>, ...""")
+    parser = optparse.OptionParser("""sphinkydoc.py <MODULE>, ...""", 
+                                   description=DESCRIPTION)
     
+    # TODO: Debug True, Prod False
     parser.add_option("-v", "--verbose",
-                      dest="verbose", action="store_true", default=True) # TODO: Debug True, Prod False
+                      dest="verbose", action="store_true", default=True) 
     parser.add_option("-n", "--dry-run",
+                      help="don't do anything harmful, uses verbose also",
                       dest="dry_run", action="store_true", default=False)
     parser.add_option("-o", "--output-dir",
-                      help="Outputs the html and temp directory to this directory",
+                      help="outputs the html and temp directory to this "
+                           "directory",
                       dest="output", default=os.getcwd())
     parser.add_option("-b", "--sphinx-build-py",
+                      help="path to the sphinx-build.py script",
                       dest="sphinx_build", default="sphinx-build.py")
     parser.add_option("-t", "--sphinx-template-dir",
-                      dest="sphinxtemplate_dir", default='')
+                      help="sphinx configuration template directory",
+                      dest="sphinxtemplate_dir", default=DYNAMIC_SPHINX_DIR)
     parser.add_option("-s", "--script",
                       dest="scripts", action="append", default=[], 
                       metavar='SCRIPT')
     parser.add_option("", "--no-validation",
                       dest="validate", action="store_false", default=True)
-    parser.add_option("", "--magic-dir",
-                      dest="magic_dir", default="../")
-    parser.add_option("-l", "--magic-literal",
-                      help="Magic files which are included as literal files, "
-                           "defaults to COPYING, COPYING.LESSER.",
-                      metavar="MAGIC_FILE",
-                      dest="magic_literals", action="append", 
-                      default=['COPYING', 'COPYING.LESSER'])
+    parser.add_option("", "--caps-dir",
+                      dest="caps_dir", default="../")
+    parser.add_option("-l", "--caps-literal",
+                      help="caps files which are included as literal files, "
+                           "defaults to COPYING, COPYING.LESSER, COPYING.LIB.",
+                      metavar="CAPS_FILE",
+                      dest="caps_literals", action="append", 
+                      default=['COPYING', 'COPYING.LESSER', 'COPYING.LIB'])
+    
     try:
         (options, modules) = parser.parse_args()
     except ValueError:
@@ -263,16 +271,13 @@ if __name__ == '__main__':
         log.setLevel(logging.INFO)
     
     # Sphinx configuration template directory 
-    sphinxtemplate_dir = options.sphinxtemplate_dir or \
-                         os.path.join(os.path.dirname(sphinkydocext.__file__),
-                                          DYNAMIC_SPHINX_DIR)
+    sphinxtemplate_dir = options.sphinxtemplate_dir
     
-    log.info("Creating documentation to "
-             "directory '%(dir)s' ..." % {'dir': options.output })
+    log.info("Creating documentation to directory '%s' ..." % options.output)
     
     # Temp directory inside the docs
     temp_dir = os.path.join(options.output, TEMP_CONFIGURATION_DIR)
-    magic_dir = os.path.realpath(options.magic_dir)
+    caps_dir = os.path.realpath(options.caps_dir)
     docs_dir = options.output
     
     # Remove old temp directory
@@ -286,9 +291,9 @@ if __name__ == '__main__':
     # directories.
     copy_tree(docs_dir, temp_dir, skip_dirs=['html', '_temp'])
     
-    # Generate magic files
-    magic_files = generate_magic(magic_dir, temp_dir, 
-                                 magic_literals=options.magic_literals,
+    # Generate caps files
+    caps_files = generate_caps(caps_dir, temp_dir, 
+                                 caps_literals=options.caps_literals,
                                  dry_run=options.dry_run)
         
     # Template the temp directory
@@ -302,8 +307,8 @@ if __name__ == '__main__':
             }
         }, 
         substs={
-            'magic_files' : magic_files,
-            'scripts' : map(os.path.realpath, options.scripts),
+            'caps_files' : caps_files,
+            'scripts' : [os.path.realpath(s) for s in options.scripts],
             'modules' : modules,
         }, 
         dry_run=options.dry_run)
@@ -312,10 +317,14 @@ if __name__ == '__main__':
     if options.validate:
         log.info("Validating sphinx configuration file (using execfile)...")
         conf_file = os.path.join(temp_dir, CONFIG_FILENAME)
+        
+        # Ignore the Exception catch
+        # pylint: disable-msg=W0703
         try:
             execfile(conf_file)
         except Exception, e:
             log.exception("Unable to validate Sphinx configuration file: %s" % e)
             sys.exit(0)
+        # pylint: enable-msg=W0703
     
     run_sphinx_build(temp_dir, sphinx_build=options.sphinx_build)

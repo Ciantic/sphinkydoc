@@ -1,7 +1,7 @@
-.. _{{ magic_name }}:
+.. _{{ caps_name }}:
 
 {{ header }}
 ==============================
 ::
 
-{{ indent(4, magic) }}
+{{ indent(4, caps) }}

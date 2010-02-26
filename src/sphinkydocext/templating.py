@@ -6,11 +6,11 @@ from jinja2 import FileSystemLoader
 from jinja2.sandbox import SandboxedEnvironment
 from pkgutil import iter_modules # TODO: DEPENDENCY: Python 2.5
 import os
-import sys
 import inspect
 
 __all__ = ['TemplatePython', 'templating_environment', 'get_submodules',
            'get_module_members']
+
 
 class TemplatePython(object):
     """Jinja2 Template python additions."""
@@ -19,9 +19,7 @@ class TemplatePython(object):
         
         :param template_env: Templating environment, 
             :obj:`jinja2.environment.Environment`.
-            
-        :param template_pythons:
-        
+
         """
         self._template_env = template_env
         self._pythons = []
@@ -47,9 +45,9 @@ class TemplatePython(object):
         return super(TemplatePython, self).__getattribute__(name)
     
     def add(self, file_):
-        """Adds file to TemplatePython registry.
+        """Adds python file to registry.
         
-        :param file_: Path to the file containing environment additions.
+        :param file_: Path to the python file containing environment additions.
         
         """
         if os.path.exists(file_):
@@ -57,13 +55,12 @@ class TemplatePython(object):
             execfile(file_, __template)
             self._pythons.append((file_, __template))
 
+
 def templating_environment(template_dirs=None):
     """Jinja2 templating environment.
     
-    Returned environment is monkey patched to include TemplatePython object in 
-    variable ``__tp``.
-    
-    :returns: :obj:`jinja2.environment.Environment`
+    :returns: :obj:`jinja2.environment.Environment`, which is monkey patched to
+        include :class:`TemplatePython` object in variable ``__tp``.
     
     """
     
@@ -88,21 +85,18 @@ def templating_environment(template_dirs=None):
         
     return tenv
 
-def _all_filter(module, use_all=True):
-    """Returns all filterer for module."""
-    custom_all = lambda m, s: not s.startswith("_")
-    
-    if use_all:
-        try:
-            all_ = module.__all__
-        except AttributeError:
-            if use_all:
-                print >> sys.stderr, ("Module %s is missing __all__, "
-                                      "falling back to public members." \
-                                      % module.__name__)
-        else:
-            custom_all = lambda m, s: s in all_
-    return custom_all
+
+def _all_filterer(module, use_all=True):
+    """All filterer for module."""
+    # Explicitely defined public members
+    if use_all and hasattr(module, "__all__"):
+        has_all = True
+        custom_all = lambda m,n: n in module.__all__
+    else:
+        has_all = False
+        custom_all = lambda m,n: not n.startswith("_")
+    return has_all, custom_all
+
 
 def get_submodules(module, use_all=True, custom_all=None):
     """Get submodules of module.
@@ -112,8 +106,8 @@ def get_submodules(module, use_all=True, custom_all=None):
     .. note:: This is generator.
     
     """
-    if not custom_all:
-        custom_all = _all_filter(module, use_all)
+    if custom_all is None:
+        _has_all, custom_all = _all_filterer(module, use_all=use_all)
         
     # Retrieve all submodules
     if hasattr(module, "__path__"): 
@@ -121,46 +115,54 @@ def get_submodules(module, use_all=True, custom_all=None):
             if custom_all(module, modname):
                 yield modname
     
-def get_module_members(module):
+    
+def get_module_members(module, use_all=True, custom_all=None):
     """Return module members.
     
     Crawls the module for members.
     
     """
-    all_filter = _all_filter(module, use_all=True)
     
-    def custom_all(n):
-        return all_filter(module, n)
+    if custom_all is None:
+        has_all, custom_all = _all_filterer(module, use_all=use_all)
     
     all_submodules = list(get_submodules(module))
     modules = all_submodules
     
     all_classes = []
     all_functions = []
-    all_attributes = []
+    all_datas = []
     all_members = []
     
     for name in dir(module):
         obj = getattr(module, name)
-        all_members.append(name)
+        
+        # Filter out the members that are not defined in this module, except
+        # those that are listed in __all__ if any.
+        if hasattr(obj, "__module__"):
+            if not (has_all and custom_all(module, name)) and \
+                obj.__module__ != module.__name__:
+                continue
         
         if inspect.isclass(obj):
             all_classes.append(name)
         elif inspect.isfunction(obj):
             all_functions.append(name)
         elif inspect.ismodule(obj):
-            pass
+            continue # Not added as member either!
         else:
-            all_attributes.append(name)
+            all_datas.append(name)
             
-    functions = filter(custom_all, all_functions)
-    classes = filter(custom_all, all_classes)
-    attributes = filter(custom_all, all_attributes)
-    members = filter(custom_all, all_members)
+        all_members.append(name)
+        
+    functions = [x for x in all_functions if custom_all(module, x)]
+    classes = [x for x in all_classes if custom_all(module, x)]
+    datas = [x for x in all_datas if custom_all(module, x)]
+    members = [x for x in all_members if custom_all(module, x)]
             
     return {'all_modules': all_submodules, 'modules' : modules,
             'all_classes' : all_classes, 'classes' : classes,
             'all_functions' : all_functions, 'functions' : functions,
-            'all_attributes' : all_attributes, 'attributes' : attributes,
+            'all_datas' : all_datas, 'datas' : datas,
             'all_members' : all_members, 'members' : members,}
 

@@ -58,7 +58,7 @@ def copy_tree(src, dst, preserve_mode=1, preserve_times=1, preserve_symlinks=0,
         sys.exit(0)
     try:
         names = os.listdir(src)
-    except os.error, (errno, errstr):
+    except os.error, (_errno, errstr):
         if dry_run:
             names = []
         else:
@@ -70,12 +70,14 @@ def copy_tree(src, dst, preserve_mode=1, preserve_times=1, preserve_symlinks=0,
     for n in names:
         src_name = os.path.join(src, n)
         dst_name = os.path.join(dst, n)
+        # pylint: disable-msg=E1101
         if preserve_symlinks and os.path.islink(src_name):
             link_dest = os.readlink(src_name) #@UndefinedVariable
             log.info("linking %s -> %s", dst_name, link_dest)
             if not dry_run:
                 os.symlink(link_dest, dst_name) #@UndefinedVariable
             outputs.append(dst_name)
+            # pylint: enable-msg=E1101
         elif os.path.isdir(src_name):
             if n in skip_dirs:
                 continue

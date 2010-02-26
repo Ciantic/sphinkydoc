@@ -3,12 +3,12 @@
 Documentation
 =============
 
-{% if topic_files(magic_files) %}
+{% if topic_files(caps_files) %}
 .. rubric:: Topics
 
 .. toctree::
-   :maxdepth: 2
-   {% for topic_file in topic_files(magic_files) %}
+   :maxdepth: 1
+   {% for topic_file in topic_files(caps_files) %}
    {{ topic_file }}
    {% endfor %}
 {% endif %}
@@ -28,18 +28,20 @@ Documentation
 .. rubric:: Modules and packages
 
 .. sphinkydoc-modules::
+	:maxdepth: 2
+	
 	{% for module in modules %}
 	{{ module }}
 	{% endfor %}
 {% endif %}
 
 
-{% if about_files(magic_files) %}
+{% if about_files(caps_files) %}
 .. rubric:: About
 
 .. toctree::
 
-   {% for about_file in about_files(magic_files) %}
+   {% for about_file in about_files(caps_files) %}
    {{ about_file }}
    {% endfor %}
 {% endif %}

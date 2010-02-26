@@ -1,12 +1,30 @@
-import os
-import sys
-from sphinkydocext.templating import templating_environment, get_module_members, \
-    get_submodules
+"""Sphinkydoc doc generation."""
 
-from subprocess import Popen, PIPE
+from sphinkydocext.templating import get_module_members, get_submodules
 from sphinx.ext.autosummary import import_by_name
+from subprocess import Popen, PIPE
+import os
 
-def all_doc(tenv, module_names, script_paths):
+__all__ = ['all_doc', 'recursive_module_doc', 'module_doc', 'script_doc', 
+           'GenerateDocError']
+
+
+def all_doc(tenv, module_names=None, script_paths=None):
+    """Generates documentation for modules and scripts given.
+    
+    :param tenv: Templating environment, retrieved e.g. by 
+        :func:`sphinkydocext.templating.templating_environment`.
+    
+    :param module_names: Root module names, documentation is generated 
+        recursively for all the submodules to current working directory.
+        
+    :param script_paths: List of paths to scripts, generates documentation 
+    files to current working directory. 
+    
+    """
+    module_names = module_names or []
+    script_paths = script_paths or []
+    
     for m in module_names:
         try:
             recursive_module_doc(tenv, m)
@@ -19,8 +37,9 @@ def all_doc(tenv, module_names, script_paths):
         except GenerateDocError:
             pass
 
+
 def recursive_module_doc(tenv, module_name):
-    """Iteratively generates module documentation for all submodules,
+    """Recursively generates module documentation also for all submodules,
     and subpackages.
     
     :param module_name: Module 
@@ -40,6 +59,7 @@ def recursive_module_doc(tenv, module_name):
     for submodule_name in get_submodules(module):
         recursive_module_doc(tenv, _name + "." + submodule_name)
 
+
 def module_doc(tenv, module_name):
     """Generates documentation for module or package.
     
@@ -54,18 +74,15 @@ def module_doc(tenv, module_name):
     
     members = get_module_members(module)
     template = tenv.get_template("sphinkydoc/module.rst")
-    
-    # Create directory for module_name
-    #if not os.path.exists(module_name):  
-    #    os.mkdir(module_name)
-    # print >> sys.stderr, "Mod name: %s, fullname: %s" % (module_name, name)
+
     tcontext = {'module': module_name, 'fullname' : name }
     tcontext.update(members)
     
-    # Write template
+    # Write template, as "somemodule.submodule.rst"
     file_ = open("%s.rst" % name, 'w+')
     file_.write(template.render(tcontext))
     file_.close()
+
 
 def script_doc(tenv, script_path):
     """Generates documentation for script.
@@ -75,9 +92,7 @@ def script_doc(tenv, script_path):
      
     """
     script_name = os.path.basename(script_path)
-    
     help = ""
-    
     cmd = ["python", script_path, "--help"]
     
     try:
@@ -93,6 +108,7 @@ def script_doc(tenv, script_path):
     tcontext = {'script_path' : script_path, 'script_name' : script_name, 
                 'help' : help}
     
+    # Write template as "somescript.py"    
     file_ = open("%s.rst" % script_name, 'w+')
     file_.write(template.render(tcontext))
     file_.close()

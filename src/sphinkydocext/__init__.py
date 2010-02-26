@@ -1,6 +1,13 @@
 """Sphinkydoc (Sphinx Extension) 
 
-Extension that is supposed to make Sphinx more ad-hoc for smaller projects.
+This is Sphinx extension that is supposed to make Sphinx more ad-hoc for smaller
+projects. When using :ref:`sphinkydoc.py` as documentation builder you don't 
+have to specify any settings, the script does them automatically.
+
+Usage in Sphinx project
+-----------------------
+
+.. todo:: To be described...
 
 """
 from sphinkydocext.templating import templating_environment
@@ -8,14 +15,12 @@ from sphinkydocext.templating import templating_environment
 __version__ = "0.5.5"
 __release__ = "0.5.5 alpha"
 __copyright__ = "Jari Pennanen, 2010"
-__project__ = "Sphinkydoc, Sphinx extension package"
-__author__ = "Jari Pennanen"
-__license__ = "FreeBSD, see COPYING"
+__project__ = "Sphinkydoc, generates documentation for whole packages"
 
 from sphinkydocext import directives, utils, templating, generate
 import sys
 
-__all__ = ['directives', 'utils', 'setup', 'templating']
+__all__ = ['directives', 'utils', 'setup', 'templating', 'generate']
 
 def builder_inited(app):
     tenv = templating_environment()
