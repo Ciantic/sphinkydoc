@@ -1,5 +1,5 @@
 {{ module_split(fullname) }}
-{{ module_split(fullname)|length*"=" }}
+{{ module_split(fullname)|length * "=" }}
 
 .. automodule:: {{ fullname }}
 
@@ -8,9 +8,10 @@
 
 .. rubric:: Submodules
 
-.. sphinkydoc::
-	:no-gen:
-	:modules: {% for submodule in all_modules %}{{ fullname }}.{{ submodule }} {% endfor %}
+.. sphinkydoc-modules::
+	{% for submodule in all_modules %}
+	{{ fullname }}.{{ submodule }}
+	{% endfor %}
 
 {% endif %}
 {% endblock %}

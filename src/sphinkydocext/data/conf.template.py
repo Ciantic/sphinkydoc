@@ -39,6 +39,21 @@ autosummary_generate = True
 
 todo_include_todos = False
 
+# Autogenerate documentation for these modules and scripts
+sphinkydoc_modules = [{% for module in modules %}'{{ module }}', {% endfor %}]
+sphinkydoc_scripts = [{% for script in scripts %}'{{ script }}', {% endfor %}]
+
+
+# Defaults to function that maches all files having upper case filepart
+# sphinkydoc_magic_files = ['README', ...]   
+
+# Magic files that are not added to toc, but are included in templates
+# sphinkydoc_magic_included = ['README']
+
+# Magic files that are in About -toc
+#sphinkydoc_magic_about = ['COPYING', 'COPYING.LIB', 'COPYING.LESSER', 'LICENSE', 
+#                          'AUTHORS', 'THANKS']
+
 def non_init_skip(app, what, name, obj, skip, options):
     """Otherwise normally, but don't skip init."""
     if skip and name == '__init__':

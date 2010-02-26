@@ -6,6 +6,7 @@ import logging
 import optparse
 import sys
 import sphinkydocext
+from sphinkydocext.utils import copy_tree
 from sphinkydocext.directives.sphinkydoc import templating_environment
 from distutils.dir_util import mkpath
 import os
@@ -23,78 +24,11 @@ DYNAMIC_SPHINX_DIR = 'data'
 CONFIG_FILENAME = 'conf.py'
 TEMP_CONFIGURATION_DIR = '_temp'
 
-def copy_tree(src, dst, preserve_mode=1, preserve_times=1, preserve_symlinks=0, 
-    update=0, verbose=0, skip_dirs=None, dry_run=0):
-    """Copy an entire directory tree 'src' to a new location 'dst'.
-    
-    Modified copy_tree, taken from distutils.dir_util.
-      
-    Both 'src' and 'dst' must be directory names.  If 'src' is not a directory,
-    raise DistutilsFileError.  If 'dst' does not exist, it is created with
-    'mkpath()'.  The end result of the copy is that every file in 'src' is
-    copied to 'dst', and directories under 'src' are recursively copied to
-    'dst'.  Return the list of files that were copied or might have been copied,
-    using their output name.
-    
-    The return value is unaffected by 'update' or 'dry_run': it is simply the
-    list of all files under 'src', with the names changed to be under 'dst'.
-    
-    'preserve_mode' and 'preserve_times' are the same as for
-    'copy_file'; note that they only apply to regular files, not to
-    directories.  If 'preserve_symlinks' is true, symlinks will be copied as
-    symlinks (on platforms that support them!); otherwise (the default), the
-    destination of the symlink will be copied.
-    
-    'update' and 'verbose' are the same as for 'copy_file'.
-    
-    """
-    from distutils.file_util import copy_file
-    
-    skip_dirs = skip_dirs or []
-    
-    if not dry_run and not os.path.isdir(src):
-        log.error("cannot copy tree '%s': not a directory", src)
-        sys.exit(0)
-    try:
-        names = os.listdir(src)
-    except os.error, (errno, errstr):
-        if dry_run:
-            names = []
-        else:
-            log.error("error listing files in '%s': %s", src, errstr)
-            sys.exit(0)
-    if not dry_run:
-        mkpath(dst)
-    outputs = []
-    for n in names:
-        src_name = os.path.join(src, n)
-        dst_name = os.path.join(dst, n)
-        if preserve_symlinks and os.path.islink(src_name):
-            link_dest = os.readlink(src_name) #@UndefinedVariable
-            log.info("linking %s -> %s", dst_name, link_dest)
-            if not dry_run:
-                os.symlink(link_dest, dst_name) #@UndefinedVariable
-            outputs.append(dst_name)
-        elif os.path.isdir(src_name):
-            if n in skip_dirs:
-                continue
-            
-            outputs.extend(
-                copy_tree(src_name, dst_name, preserve_mode, 
-                    preserve_times, preserve_symlinks, update, 
-                    dry_run=dry_run))
-        else:
-            copy_file(src_name, dst_name, preserve_mode, 
-                preserve_times, update, dry_run=dry_run)
-            outputs.append(dst_name)
-    
-    return outputs
-        
 def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
-    """Templates the directory using jinja2.
+    """Templates the directory using Jinja2.
     
     All files inside template_dir which has ".template" in filename is 
-    templated.
+    templated using Jinja2 and the word ".template" is removed from filename.
     
     :param template_dir: Path to directory of templating.
     :param file_substs: Dictionary of template substitions by filename relative 
@@ -110,6 +44,12 @@ def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
     template_dir = os.path.realpath(template_dir)
     
     def valid_template_filename(filename):
+        """Check that filename is valid templating filename.
+        
+        Currently checks that ".template" is in filename, and that filename
+        is not exactly ".template".
+        
+        """
         return ".template" in filename and len(filename) > len(".template")
     
     template_env = templating_environment(template_dirs=[template_dir])
@@ -185,7 +125,7 @@ def _magic(filepath, template_file, context=None):
     f.close()
     
 def magic(filepath):
-    """Preprocesses magic files by sphinkydoc/magic.rst jinja2 template.
+    """Preprocesses magic files by "sphinkydoc/magic.rst" jinja2 template.
     
     :path filepath: Path to the magic file.
     
@@ -193,7 +133,11 @@ def magic(filepath):
     _magic(filepath, "sphinkydoc/magic.rst")
 
 def magic_literal(filepath, header=None):
-    """Turns file to reStructuredText literal file.
+    """Preprocesses magic files by "sphinkydoc/magic_literal.rst" jinja2 
+    template.
+    
+    This assumes the given file is *not* in reStructuredText format and should
+    be shown as literal block.
     
     :param filepath: Path to the file being mangled.
     :param header: Header for the created reStructuredText file, defaults to
@@ -264,17 +208,15 @@ def run_sphinx_build(sphinx_conf_dir, dry_run=False,
     """
     old_dir = os.getcwd()
     os.chdir(sphinx_conf_dir)
+    
+    # TODO: FEATURE: Option passing to sphinx-build.py
+    
     cmd1 = ["python", sphinx_build, ".", "../html"]
-    cmd2 = ["python", sphinx_build, ".", "../html"]
     log.info("Sphinx build, inside directory %s" % os.getcwd())
-    log.info("Running sphinx-build (1): %s" % subprocess.list2cmdline(cmd1))
-    # TODO: PERFORMANCE: One could implement generation in this point, so the
-    # second pass would not be required...
-    log.info("Running sphinx-build (2): %s" % subprocess.list2cmdline(cmd2))
+    log.info("Running sphinx-build: %s" % subprocess.list2cmdline(cmd1))
     
     if not dry_run:
         subprocess.call(cmd1)
-        subprocess.call(cmd2)
     
     os.chdir(old_dir)
 

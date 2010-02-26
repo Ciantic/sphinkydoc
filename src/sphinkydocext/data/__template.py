@@ -1,7 +1,7 @@
 """Magic template file.
 
-:func:`pre_template` function can be defined which is executed *before* any templating
-on this directory is done. :func:`pre_template` should be in format:
+:func:`pre_template` function can be defined which is executed *before* any
+templating on this directory is done. :func:`pre_template` should be in format:
 
     pre_template(env, file_substs=None, substs=None)
 
@@ -13,7 +13,8 @@ context substitions, and `substs` are global template context substitions.
 import os
 
 INCLUDED_FILES = ['README']
-ABOUT_FILES = ['COPYING', 'COPYING.LESSER', 'LICENSE', 'AUTHORS']
+ABOUT_FILES = ['COPYING', 'COPYING.LIB', 'COPYING.LESSER', 'LICENSE', 'AUTHORS', 
+               'THANKS']
 
 def topic_files(files):
     return list(filter((lambda f: f not in (ABOUT_FILES + INCLUDED_FILES)), 

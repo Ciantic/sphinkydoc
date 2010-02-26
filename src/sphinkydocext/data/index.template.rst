@@ -13,19 +13,24 @@ Documentation
    {% endfor %}
 {% endif %}
   
+  
 {% if scripts %}
 .. rubric:: Scripts and executables
 
-.. sphinkydoc::
-	:scripts: {% for script in scripts %}"{{ script }}" {% endfor %}
+.. sphinkydoc-scripts::
+	{% for script in scripts %}
+	{{ script }}
+	{% endfor %}
 {% endif %}
 
 
 {% if modules %}
 .. rubric:: Modules and packages
 
-.. sphinkydoc::
-	:modules: {% for module in modules %}{{ module }} {% endfor %}
+.. sphinkydoc-modules::
+	{% for module in modules %}
+	{{ module }}
+	{% endfor %}
 {% endif %}
 
 

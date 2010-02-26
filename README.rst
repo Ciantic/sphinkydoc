@@ -5,8 +5,8 @@ This is `Sphinx documentation generator`_ helper script and extension. Main purp
 is to leverage the power of Sphinx for small Python projects. For those it is 
 usually sufficient to document the code in docstrings.
 
-Also Sphinkydoc tries to address the problem that no documentation should be 
-written twice. This is why system also tries to look for magic files in your 
+Also Sphinkydoc tries to address the problem that *no documentation should be 
+written twice*. This is why system also tries to look for magic files in your 
 project, such as `INSTALL`, `README`, `COPYING`, which also contain bits for the 
 documentation.
 
