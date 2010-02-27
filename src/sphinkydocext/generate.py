@@ -1,4 +1,4 @@
-"""Sphinkydoc doc generation."""
+"""Sphinkydoc document file generation."""
 
 from sphinkydocext.templating import get_module_members, get_submodules
 from sphinx.ext.autosummary import import_by_name
@@ -19,7 +19,7 @@ def all_doc(tenv, module_names=None, script_paths=None):
         recursively for all the submodules to current working directory.
         
     :param script_paths: List of paths to scripts, generates documentation 
-    files to current working directory. 
+        files to current working directory. 
     
     """
     module_names = module_names or []
@@ -61,7 +61,8 @@ def recursive_module_doc(tenv, module_name):
 
 
 def module_doc(tenv, module_name):
-    """Generates documentation for module or package.
+    """Generates documentation for module or package to current working 
+    directory.
     
     :param module_name: Full name of the module.
      
@@ -85,10 +86,9 @@ def module_doc(tenv, module_name):
 
 
 def script_doc(tenv, script_path):
-    """Generates documentation for script.
+    """Generates documentation file for script to current working directory.
     
     :param script_path: Path to script.
-    :returns: reStructuredText tuple that can be used in tables.
      
     """
     script_name = os.path.basename(script_path)
