@@ -1,14 +1,13 @@
-.. include:: README.rst
+.. include:: README.inc
 
 Documentation
 =============
 
-{% if topic_files(caps_files) %}
+{% if topic_files %}
 .. rubric:: Topics
 
 .. toctree::
-   :maxdepth: 1
-   {% for topic_file in topic_files(caps_files) %}
+   {% for topic_file in topic_files %}
    {{ topic_file }}
    {% endfor %}
 {% endif %}
@@ -29,19 +28,17 @@ Documentation
 
 .. sphinkydoc-modules::
 	:maxdepth: 2
-	
 	{% for module in modules %}
 	{{ module }}
 	{% endfor %}
 {% endif %}
 
 
-{% if about_files(caps_files) %}
+{% if about_files %}
 .. rubric:: About
 
 .. toctree::
-
-   {% for about_file in about_files(caps_files) %}
+   {% for about_file in about_files %}
    {{ about_file }}
    {% endfor %}
 {% endif %}

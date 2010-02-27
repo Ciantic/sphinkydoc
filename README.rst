@@ -20,7 +20,7 @@ Optional *additional documentation* files are located in ``myproject/docs/``,
 and should have extension ``.rst``. All the rest project files are in 
 ``myproject/``, if you have :term:`caps-files <caps-file>` such as 
 ``myproject/README``, ``INSTALL``, ``AUTHORS``, ``CHANGES``, ``LICENSE`` or any 
-other file that is in written in uppercase, they are treated as reStructuredText
+other file that is written in uppercase, they are treated as reStructuredText
 files and included to documentation. By default there is *exception for files 
 named*: ``COPYING``, ``COPYING.LESSER``, ``COPYING.LIB`` which are treated as 
 :term:`literal-files<literal-file>`, because they most likely contain GPL 
@@ -57,7 +57,7 @@ module. This way you can maintain version information in *one place*.
 You can see the options of :ref:`sphinkydoc.py in the documentation 
 <sphinkydoc.py>`.
 
-.. [1] Currently the script parsing is treated as literal, ideally there should
+.. [1] Currently the script output is treated as literal, ideally there should
 	be a more robust help parser that can convert it to reStructuredText, if you 
 	are interested to help on this matter see 
 	:func:`sphinkydocext.generate.script_doc`.

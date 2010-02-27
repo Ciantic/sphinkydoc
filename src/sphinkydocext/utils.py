@@ -1,12 +1,37 @@
 """Utils for sphinkydoc"""
+from distutils.dir_util import mkpath
+from pkgutil import iter_modules
+import inspect
+import logging
+import os
 import re
 import sys
-import logging
-from distutils.dir_util import mkpath
-import os
+
+def multi_matcher(patterns):
+    """Returns multi matcher for several patterns.
+    
+    If pattern contains a string, it is treated as direct comparsion with 
+    equivalence. In case the pattern has match function, it is used to matching.
+    
+    :param patterns: Sequence of either string or matcher objects.
+    
+    """
+    def matcher(item):
+        for pat in patterns:
+            if hasattr(pat, 'match'):
+                if pat.match(item):
+                    return True
+            else:
+                if pat == item:
+                    return True
+        return False
+    return matcher
 
 
-__all__ = ['quote_split']
+def path_to_posix(filepath):
+    """Converts path to posix path."""
+    return filepath.replace("\\", "/")
+
 
 def quote_split(str):
     """Splits the string by quotes.
@@ -92,4 +117,97 @@ def copy_tree(src, dst, preserve_mode=1, preserve_times=1, preserve_symlinks=0,
             outputs.append(dst_name)
     
     return outputs
+
+
+def all_filterer(module, use_all=True):
+    """All filterer for module.
+    
+    :param use_all: Use `__all__` of module, if true.
+    
+    """
+    # Explicitely defined public members
+    if use_all and hasattr(module, "__all__"):
+        has_all = True
+        custom_all = lambda m,n: n in module.__all__
+    else:
+        has_all = False
+        print >> sys.stderr, ("Module %s is missing __all__, falling back to "
+                              "public members" % module.__name__)
+        custom_all = lambda m,n: not n.startswith("_")
+    return has_all, custom_all
+
+
+def get_submodules(module, use_all=True, custom_all=None):
+    """Generator that get submodules of module.
+    
+    :param use_all: Use `__all__` of module, if true.
+    :param custom_all: Overrides any all settings with own all filter function.
+    
+    """
+    if custom_all is None:
+        _has_all, custom_all = all_filterer(module, use_all=use_all)
         
+    # Retrieve all submodules
+    if hasattr(module, "__path__"): 
+        for _imp, modname, _isp in iter_modules(module.__path__):
+            if custom_all(module, modname):
+                yield modname
+    
+    
+def get_module_members(module, use_all=True, custom_all=None):
+    """Return module members.
+    
+    :param use_all: Use `__all__` of module, if true.
+    :param custom_all: Overrides any all settings with own all filter function.
+    
+    """
+    
+    if custom_all is None:
+        has_all, custom_all = all_filterer(module, use_all=use_all)
+    
+    all_submodules = list(get_submodules(module))
+    modules = all_submodules
+    
+    all_classes = []
+    all_exceptions = []
+    all_functions = []
+    all_datas = []
+    all_members = []
+    
+    for name in dir(module):
+        obj = getattr(module, name)
+        
+        # Filter out the members that are not defined in this module, except
+        # those that are listed in __all__ if any.
+        if hasattr(obj, "__module__"):
+            if not (has_all and custom_all(module, name)) and \
+                obj.__module__ != module.__name__:
+                continue
+        
+        if inspect.isclass(obj):
+            if issubclass(obj, Exception):
+                all_exceptions.append(name)
+            else:
+                all_classes.append(name)
+        elif inspect.isfunction(obj):
+            all_functions.append(name)
+        elif inspect.ismodule(obj):
+            continue # Not added as member either!
+        else:
+            all_datas.append(name)
+            
+        all_members.append(name)
+        
+    classes = [x for x in all_classes if custom_all(module, x)]
+    exceptions = [x for x in all_exceptions if custom_all(module, x)]
+    functions = [x for x in all_functions if custom_all(module, x)]
+    datas = [x for x in all_datas if custom_all(module, x)]
+    members = [x for x in all_members if custom_all(module, x)]
+            
+    return {'all_modules': all_submodules, 'modules' : modules,
+            'all_exceptions' : all_exceptions, 'exceptions' : exceptions,
+            'all_classes' : all_classes, 'classes' : classes,
+            'all_functions' : all_functions, 'functions' : functions,
+            'all_datas' : all_datas, 'datas' : datas,
+            'all_members' : all_members, 'members' : members,}
+

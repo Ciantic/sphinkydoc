@@ -4,6 +4,10 @@ DESCRIPTION = """Sphinx automated documentation generator and builder script.
 Main purpose is to generate documentation for small projects, which usually does
 not require external written documents."""
 
+# Pylint-disable settings ----------------
+# Todo messages:
+#     pylint: disable-msg=W0511
+
 from jinja2.exceptions import TemplateError
 from sphinkydocext.directives.sphinkydoc import templating_environment
 from sphinkydocext.utils import copy_tree
@@ -16,12 +20,11 @@ import sphinkydocext
 import subprocess
 import sys
 
-
 logging.basicConfig()
 log = logging.getLogger("sphinkydoc")
 
-DYNAMIC_SPHINX_DIR = os.path.join(\
-    os.path.dirname(sphinkydocext.__file__), 'data')
+DYNAMIC_SPHINX_DIR = os.path.join(os.path.dirname(sphinkydocext.__file__), 
+                                  'data')
 CONFIG_FILENAME = 'conf.py'
 TEMP_CONFIGURATION_DIR = '_temp'
 
@@ -105,98 +108,7 @@ def template_dir(template_dir, file_substs=None, substs=None, dry_run=False):
     
     log.info("Directory templated.")
 
-def _caps(filepath, template_file, context=None):
-    """Turns file to reStructuredText literal file.
-    
-    """
-    context = context or {}
-    caps_name = os.path.basename(os.path.splitext(filepath)[0])
-    
-    context.update({
-        'caps_name' : caps_name, 
-        'caps' :  open(filepath, 'r').read(),
-    })
-    
-    tenv = templating_environment()
-    t = tenv.get_template(template_file)
-    tc = t.render(context)
-    
-    f = open(filepath, 'w+')
-    f.write(tc)
-    f.close()
-    
-def caps(filepath):
-    """Preprocesses caps files by "sphinkydoc/caps.rst" jinja2 template.
-    
-    :path filepath: Path to the caps file.
-    
-    """
-    _caps(filepath, "sphinkydoc/caps.rst")
-
-def caps_literal(filepath, header=None):
-    """Preprocesses caps files by "sphinkydoc/caps_literal.rst" jinja2 
-    template.
-    
-    This assumes the given file is *not* in reStructuredText format and should
-    be shown as literal block.
-    
-    :param filepath: Path to the file being mangled.
-    :param header: Header for the created reStructuredText file, defaults to
-        filename without extension.
-    
-    """
-    
-    if header is None:
-        header = os.path.basename(os.path.splitext(filepath)[0])
-    
-    _caps(filepath, "sphinkydoc/caps_literal.rst", {'header' : header})
-
-def generate_caps(caps_dir, dst_dir, ext='rst', caps_literals=None, 
-                   dry_run=False):
-    """Copies caps files from ``caps_dir`` to destination directory.
-    
-    Caps files are files such as INSTALL, COPYING, README, which contain 
-    documentation worthy content outside docs directory.
-    
-    :param caps_dir: Directory where caps files reside.
-    :param dst_dir: Destination directory where caps files are *copied*.
-    :param ext: Enforce all caps files to be in this extension.
-    :param caps_literals: Caps files that are treated as literal files.
-    :param dry_run: Dry run only, no copying or other harmful changes.
-    
-    :returns: Dictionary of extensionless filenames to filename with extension. 
-    
-    """
-    caps_literals = caps_literals or []
-    caps_files = []
-    
-    dir_contents = os.listdir(caps_dir)
-    
-    for filename in dir_contents:
-        if re.match("^[A-Z](\.[A-Za-z]+)?", filename):
-            new_filename = filename
             
-            # Add the extension if not there
-            if not filename.endswith(ext):
-                new_filename += '.%s' % ext
-                
-            new_filename_wo_ext = new_filename[:-len(ext)-1]
-
-            filepath = os.path.join(caps_dir, filename)
-            new_filepath = os.path.join(dst_dir, new_filename) 
-            
-            if not dry_run:
-                shutil.copy(filepath, new_filepath)
-                
-            if new_filename_wo_ext in caps_literals:
-                caps_literal(new_filepath)
-            else:
-                caps(new_filepath)
-            
-            caps_files.append(new_filename_wo_ext)
-    
-    return caps_files
-                    
 def run_sphinx_build(sphinx_conf_dir, dry_run=False, 
                      sphinx_build='sphinx-build.py'):
     """Runs the sphinx-build.py in given directory.
@@ -289,12 +201,12 @@ if __name__ == '__main__':
     
     # Copy all files from docs dir to temp dir, except html and temp 
     # directories.
-    copy_tree(docs_dir, temp_dir, skip_dirs=['html', '_temp'])
+    #copy_tree(docs_dir, temp_dir, skip_dirs=['html', '_temp'])
     
     # Generate caps files
-    caps_files = generate_caps(caps_dir, temp_dir, 
-                                 caps_literals=options.caps_literals,
-                                 dry_run=options.dry_run)
+    #caps_files = generate_caps(caps_dir, temp_dir, 
+    #                             caps_literals=options.caps_literals,
+    #                             dry_run=options.dry_run)
         
     # Template the temp directory
     template_dir(temp_dir, 
@@ -307,7 +219,8 @@ if __name__ == '__main__':
             }
         }, 
         substs={
-            'caps_files' : caps_files,
+            'caps_dir' : os.path.realpath(caps_dir),
+            'docs_dir' : os.path.realpath(docs_dir),
             'scripts' : [os.path.realpath(s) for s in options.scripts],
             'modules' : modules,
         }, 

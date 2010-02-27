@@ -1,19 +1,72 @@
-
 # -*- coding: utf-8 -*-
-
 """Sphinkydoc extension templating"""
 from jinja2 import FileSystemLoader
 from jinja2.sandbox import SandboxedEnvironment
-from pkgutil import iter_modules # TODO: DEPENDENCY: Python 2.5
 import os
-import inspect
 
-__all__ = ['TemplatePython', 'templating_environment', 'get_submodules',
-           'get_module_members']
+# Pylint-disable settings ----------------
+# Todo messages:
+#     pylint: disable-msg=W0511
 
+# TODO: DEPENDENCY: Python 2.5 - iter_modules
+
+def _caps(tenv, filepath, template_file, context=None):
+    """Turns file to reStructuredText literal file."""
+    context = context or {}
+    caps_name = os.path.basename(os.path.splitext(filepath)[0])
+    
+    context.update({
+        'caps_name' : caps_name, 
+        'caps' :  open(filepath, 'r').read(),
+    })
+    
+    t = tenv.get_template(template_file)
+    tc = t.render(context)
+    
+    f = open(filepath, 'w+')
+    f.write(tc)
+    f.close()
+
+        
+def caps(tenv, filepath):
+    """Preprocesses caps files by "sphinkydoc/caps.rst" jinja2 template.
+    
+    :path filepath: Path to the caps file.
+    
+    """
+    _caps(tenv, filepath, "sphinkydoc/caps.rst")
+
+
+def caps_literal(tenv, filepath, header=None):
+    """Preprocesses caps files by "sphinkydoc/caps_literal.rst" jinja2 
+    template.
+    
+    This assumes the given file is *not* in reStructuredText format and should
+    be shown as literal block.
+    
+    :param filepath: Path to the file being mangled.
+    :param header: Header for the created reStructuredText file, defaults to
+        filename without extension.
+    
+    """
+    
+    if header is None:
+        header = os.path.basename(os.path.splitext(filepath)[0])
+    
+    _caps(tenv, filepath, "sphinkydoc/caps_literal.rst", {'header' : header})
 
 class TemplatePython(object):
-    """Jinja2 Template python additions."""
+    """Jinja2 Template python additions.
+    
+    Purpose of this class is to add extra callback functionality for Jinja2 
+    environment, so that registered python files can handle those.
+    
+    Point is to have ``__template.py`` in the template directory root, which
+    then is added using :meth:`TemplatePython.add` to the environment, and after
+    that the ``__template.py`` can register extra functionality such as filters
+    and functions to Jinja2 environment.
+     
+    """
     def __init__(self, template_env):
         """Create templating environment wrapper.
         
@@ -76,93 +129,15 @@ def templating_environment(template_dirs=None):
     
     tenv.__tp = TemplatePython(tenv) 
     
+    # Ignore protected member access
+    # pylint: disable-msg=W0212
+    #
     # Add all __template.pys
     for tdir in template_dirs_:
         tp = os.path.realpath(os.path.join(tdir, "__template.py"))
         tenv.__tp.add(tp)
     
     tenv.__tp.pre_template()
+    # pylint: enable-msg=W0212
         
     return tenv
-
-
-def _all_filterer(module, use_all=True):
-    """All filterer for module."""
-    # Explicitely defined public members
-    if use_all and hasattr(module, "__all__"):
-        has_all = True
-        custom_all = lambda m,n: n in module.__all__
-    else:
-        has_all = False
-        custom_all = lambda m,n: not n.startswith("_")
-    return has_all, custom_all
-
-
-def get_submodules(module, use_all=True, custom_all=None):
-    """Get submodules of module.
-    
-    Uses all if required.
-    
-    .. note:: This is generator.
-    
-    """
-    if custom_all is None:
-        _has_all, custom_all = _all_filterer(module, use_all=use_all)
-        
-    # Retrieve all submodules
-    if hasattr(module, "__path__"): 
-        for _imp, modname, _isp in iter_modules(module.__path__):
-            if custom_all(module, modname):
-                yield modname
-    
-    
-def get_module_members(module, use_all=True, custom_all=None):
-    """Return module members.
-    
-    Crawls the module for members.
-    
-    """
-    
-    if custom_all is None:
-        has_all, custom_all = _all_filterer(module, use_all=use_all)
-    
-    all_submodules = list(get_submodules(module))
-    modules = all_submodules
-    
-    all_classes = []
-    all_functions = []
-    all_datas = []
-    all_members = []
-    
-    for name in dir(module):
-        obj = getattr(module, name)
-        
-        # Filter out the members that are not defined in this module, except
-        # those that are listed in __all__ if any.
-        if hasattr(obj, "__module__"):
-            if not (has_all and custom_all(module, name)) and \
-                obj.__module__ != module.__name__:
-                continue
-        
-        if inspect.isclass(obj):
-            all_classes.append(name)
-        elif inspect.isfunction(obj):
-            all_functions.append(name)
-        elif inspect.ismodule(obj):
-            continue # Not added as member either!
-        else:
-            all_datas.append(name)
-            
-        all_members.append(name)
-        
-    functions = [x for x in all_functions if custom_all(module, x)]
-    classes = [x for x in all_classes if custom_all(module, x)]
-    datas = [x for x in all_datas if custom_all(module, x)]
-    members = [x for x in all_members if custom_all(module, x)]
-            
-    return {'all_modules': all_submodules, 'modules' : modules,
-            'all_classes' : all_classes, 'classes' : classes,
-            'all_functions' : all_functions, 'functions' : functions,
-            'all_datas' : all_datas, 'datas' : datas,
-            'all_members' : all_members, 'members' : members,}
-

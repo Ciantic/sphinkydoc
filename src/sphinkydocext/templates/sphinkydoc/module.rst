@@ -1,6 +1,9 @@
-{{ module_split(fullname)|length * "'" }}
+{{ module_split(fullname)|length * "~" }}
 {{ module_split(fullname) }}
-{{ module_split(fullname)|length * "'" }}
+{{ module_split(fullname)|length * "~" }}
+{# Every document has only *one* header, and I assume when I put it with over #}
+{# ~~~~~ and under ~~~~~ I can pretty safely assume that *no* docstring does #}
+{# that, so they cannot collide with H1 header. #}
 
 .. automodule:: {{ fullname }}
 
