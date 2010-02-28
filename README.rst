@@ -54,8 +54,8 @@ primary module of your project, where Sphinkydoc also looks for variables
 type ``|release|`` in e.g. ``README``, it is rendered as same string as in your
 module. This way you can maintain version information in *one place*.
 
-You can see the options of :ref:`sphinkydoc.py in the documentation 
-<sphinkydoc.py>`.
+.. seealso:: You can see the options of :ref:`sphinkydoc.py in the documentation 
+	<sphinkydoc.py>`.
 
 .. [1] Currently the script output is treated as literal, ideally there should
 	be a more robust help parser that can convert it to reStructuredText, if you 

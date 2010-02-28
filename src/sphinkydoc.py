@@ -14,7 +14,6 @@ from sphinkydocext.utils import copy_tree
 import logging
 import optparse
 import os
-import re
 import shutil
 import sphinkydocext
 import subprocess
@@ -133,40 +132,48 @@ def run_sphinx_build(sphinx_conf_dir, dry_run=False,
     
     os.chdir(old_dir)
 
+parser = optparse.OptionParser("""sphinkydoc.py <MODULE>, ...""", 
+                               description=DESCRIPTION)
+"""Main parser.
+
+This is defined in module level so that other scripts can access it.
+"""
+
+# TODO: Debug True, Prod False
+parser.add_option("-v", "--verbose",
+                  dest="verbose", action="store_true", default=True) 
+parser.add_option("-n", "--dry-run",
+                  help="don't do anything harmful, uses verbose also",
+                  dest="dry_run", action="store_true", default=False)
+parser.add_option("-o", "--output-dir",
+                  help="outputs the html and temp directory to this "
+                       "directory",
+                  dest="output", default=os.getcwd())
+parser.add_option("-b", "--sphinx-build-py",
+                  help="path to the sphinx-build.py script",
+                  dest="sphinx_build", default="sphinx-build.py")
+parser.add_option("-p", "--python-path",
+                  help="append this directory to python path",
+                  dest="python_path", action="append", default=[], 
+                  metavar='PATH')
+parser.add_option("-t", "--sphinx-template-dir",
+                  help="sphinx configuration template directory",
+                  dest="sphinxtemplate_dir", default=DYNAMIC_SPHINX_DIR)
+parser.add_option("-s", "--script",
+                  dest="scripts", action="append", default=[], 
+                  metavar='SCRIPT')
+parser.add_option("", "--no-validation",
+                  dest="validate", action="store_false", default=True)
+parser.add_option("", "--caps-dir",
+                  dest="caps_dir", default="../")
+parser.add_option("-l", "--caps-literal",
+                  help="caps files which are included as literal files, "
+                       "defaults to COPYING, COPYING.LESSER, COPYING.LIB.",
+                  metavar="CAPS_FILE",
+                  dest="caps_literals", action="append", 
+                  default=['COPYING', 'COPYING.LESSER', 'COPYING.LIB'])
+    
 if __name__ == '__main__':
-    parser = optparse.OptionParser("""sphinkydoc.py <MODULE>, ...""", 
-                                   description=DESCRIPTION)
-    
-    # TODO: Debug True, Prod False
-    parser.add_option("-v", "--verbose",
-                      dest="verbose", action="store_true", default=True) 
-    parser.add_option("-n", "--dry-run",
-                      help="don't do anything harmful, uses verbose also",
-                      dest="dry_run", action="store_true", default=False)
-    parser.add_option("-o", "--output-dir",
-                      help="outputs the html and temp directory to this "
-                           "directory",
-                      dest="output", default=os.getcwd())
-    parser.add_option("-b", "--sphinx-build-py",
-                      help="path to the sphinx-build.py script",
-                      dest="sphinx_build", default="sphinx-build.py")
-    parser.add_option("-t", "--sphinx-template-dir",
-                      help="sphinx configuration template directory",
-                      dest="sphinxtemplate_dir", default=DYNAMIC_SPHINX_DIR)
-    parser.add_option("-s", "--script",
-                      dest="scripts", action="append", default=[], 
-                      metavar='SCRIPT')
-    parser.add_option("", "--no-validation",
-                      dest="validate", action="store_false", default=True)
-    parser.add_option("", "--caps-dir",
-                      dest="caps_dir", default="../")
-    parser.add_option("-l", "--caps-literal",
-                      help="caps files which are included as literal files, "
-                           "defaults to COPYING, COPYING.LESSER, COPYING.LIB.",
-                      metavar="CAPS_FILE",
-                      dest="caps_literals", action="append", 
-                      default=['COPYING', 'COPYING.LESSER', 'COPYING.LIB'])
-    
     try:
         (options, modules) = parser.parse_args()
     except ValueError:

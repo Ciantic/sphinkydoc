@@ -7,6 +7,33 @@ import os
 import re
 import sys
 
+
+def truncate_path(path, directory=None, extension=None):
+    """Truncates given path.
+    
+    :param path: Path to be truncated.
+    :param directory: Truncates the directory from beginning.
+    :param extension: Truncates the extension from end.
+    
+    :returns: Path truncated.
+    
+    >>> truncate_path("C:\\somedirectory\\mydocs\\some file.rst", "C:\\somedirectory", "rst")
+    mydocs\some_file.rst
+     
+    """
+    truncpath = path
+    
+    if directory is not None:
+        if truncpath.startswith(directory):
+            truncpath = truncpath[len(directory)+1:]
+            
+    if extension is not None:
+        if truncpath.endswith(".%s" % extension):
+            truncpath = truncpath[:-len(extension)-1]
+            
+    return truncpath
+
+
 def multi_matcher(patterns):
     """Returns multi matcher for several patterns.
     
@@ -33,16 +60,17 @@ def path_to_posix(filepath):
     return filepath.replace("\\", "/")
 
 
-def quote_split(str):
+def quote_split(text):
     """Splits the string by quotes.
     
-    :param str: String to be split.
+    :param text: String to be split.
     
     >>> quote_split('something test "something awesome"')
     ['something', 'test', 'something awesome']
     
     """
-    return [p.strip("\" ") for p in re.split("( |[\\\"'].*[\\\"'])", str) if p.strip("\" ")]
+    return [p.strip("\" ") for p in re.split("( |[\\\"'].*[\\\"'])", text) 
+            if p.strip("\" ")]
 
 
 def copy_tree(src, dst, preserve_mode=1, preserve_times=1, preserve_symlinks=0, 

@@ -13,6 +13,7 @@ class sphinkydoc_toc(nodes.comment):
     """Dummy toc node."""
     pass
         
+        
 def create_toc(names, maxdepth=-1):
     """Create toc node entries for names.
     
@@ -23,6 +24,7 @@ def create_toc(names, maxdepth=-1):
     tocnode['maxdepth'] = maxdepth
     tocnode['glob'] = None
     return tocnode
+
 
 class SphinkydocModules(Directive):
     """Sphinkydoc modules toc-tree directive.

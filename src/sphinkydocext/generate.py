@@ -1,5 +1,7 @@
 """Sphinkydoc document file generation."""
 
+from optparse import OptionParser
+from sphinkydocext import log
 from sphinkydocext.templating import caps_literal, caps
 from sphinkydocext.utils import multi_matcher, get_submodules, \
     get_module_members
@@ -11,7 +13,7 @@ import subprocess
 
 # TODO: Consistent returning values for the following doc generations.
 
-def index_doc(tenv, tcontext, output_dir=None):
+def index_doc(tenv, tcontext, output_dir=None, overwrite=False):
     """Generate documentation index.
     
     :param tenv: Templating environment, retrieved e.g. by 
@@ -28,14 +30,44 @@ def index_doc(tenv, tcontext, output_dir=None):
     suffix = "rst"
     filename = os.path.join(output_dir, "%s.%s" % (master, suffix))
     
-    f = open(filename, "w+")
-    f.write(rendition)
-    f.close()
+    if overwrite or not os.path.exists(filename):
+        f = open(filename, "w+")
+        f.write(rendition)
+        f.close()
     
     return filename
 
 
-def included_doc(tenv, docname, src_dir, ext="rst"):
+def readme_html_doc(tenv, docs_url, output_dir=None, overwrite=False):
+    """Create README.html shortcut.
+    
+    Purpose is to have README.html that points to "docs/html/index.html" if it
+    exists. If it does not exist, the distribution is most likely fetched from
+    version control where HTML documentation is not generated, in this case the
+    link should point to homepage which has always the versioned documentation.
+    
+    This way we can provide both, the end users of the project and users of 
+    version control the easiest way to access the documentation.
+    
+    :param tenv: Templating environment, retrieved e.g. by 
+        :func:`sphinkydocext.templating.templating_environment`.
+    
+    :param output_dir: Output directory of generated document.
+    
+    """
+    output_dir = output_dir or os.path.abspath(".")
+    
+    t = tenv.get_template("sphinkydoc/README.html")
+    rendition = t.render({'docs_url' : docs_url })
+    
+    filename = os.path.join(output_dir, "README.html")
+        
+    if overwrite or not os.path.exists(filename):
+        f = open(filename, "w+")
+        f.write(rendition)
+        f.close()
+
+def included_doc(tenv, docname, src_dir, ext="rst", overwrite=False):
     """Included documents pre-processed.
     
     Sphinx does not allow included documents to be with same prefix as the 
@@ -50,13 +82,14 @@ def included_doc(tenv, docname, src_dir, ext="rst"):
     """
     src = os.path.join(src_dir, "%s.%s" % (docname, ext))
     dst = os.path.join(src_dir, "%s.%s" % (docname, "inc"))
-    shutil.move(src, dst)
+    if overwrite or not os.path.exists(dst):
+        shutil.move(src, dst)
     return dst
     
 
-def all_doc(tenv, module_names=None, script_paths=None, output_dir=None):
-    """Generates documentation for modules and scripts to current working 
-    directory.
+def all_doc(tenv, module_names=None, script_paths=None, output_dir=None, 
+            overwrite=False):
+    """Generates documentation for modules and scripts.
     
     :param tenv: Templating environment, retrieved e.g. by 
         :func:`sphinkydocext.templating.templating_environment`.
@@ -75,20 +108,27 @@ def all_doc(tenv, module_names=None, script_paths=None, output_dir=None):
     module_names = module_names or []
     script_paths = script_paths or []
     
+    module_files = []
+    script_files = []
+    
     for m in module_names:
         try:
-            recursive_module_doc(tenv, m, output_dir=output_dir)
+            module_files.extend(recursive_module_doc(tenv, m, 
+                                                     output_dir=output_dir, 
+                                                     overwrite=overwrite))
         except GenerateDocError:
             pass
         
     for s in script_paths:
         try:
-            script_doc(tenv, s, output_dir=output_dir)
+            script_files.append(script_doc(tenv, s, output_dir=output_dir, 
+                                           overwrite=overwrite))
         except GenerateDocError:
             pass
+    
+    return module_files, script_files
 
-
-def recursive_module_doc(tenv, module_name, output_dir=None):
+def recursive_module_doc(tenv, module_name, output_dir=None, overwrite=False):
     """Recursively generates module documentation also for all submodules,
     and subpackages.
     
@@ -104,19 +144,23 @@ def recursive_module_doc(tenv, module_name, output_dir=None):
     except ImportError, e:
         raise GenerateDocError("Failed to import '%s': %s" % (module_name, e))
     
+    module_files = []
+    
     try:
-        module_doc(tenv, _name)
+        module_files.append(module_doc(tenv, _name, output_dir=output_dir, 
+                                       overwrite=overwrite))
     except GenerateDocError:
         pass
     
     for submodule_name in get_submodules(module):
-        recursive_module_doc(tenv, _name + "." + submodule_name, 
-                             output_dir=output_dir)
+        module_files.extend(recursive_module_doc(tenv, 
+                                                 _name + "." + submodule_name, 
+                                                 output_dir=output_dir))
+    
+    return module_files
 
-
-def module_doc(tenv, module_name, output_dir=None):
-    """Generates documentation for module or package to current working 
-    directory.
+def module_doc(tenv, module_name, output_dir=None, overwrite=False):
+    """Generates documentation for module or package.
     
     :param tenv: Jinja2 templating environment.
     :param module_name: Full name of the module.
@@ -139,13 +183,73 @@ def module_doc(tenv, module_name, output_dir=None):
     filename = os.path.join(output_dir, "%s.rst" % name)
     
     # Write template, as "somemodule.submodule.rst"
-    file_ = open(filename, 'w+')
-    file_.write(template.render(tcontext))
-    file_.close()
+    if overwrite or not os.path.exists(filename):
+        file_ = open(filename, 'w+')
+        file_.write(template.render(tcontext))
+        file_.close()
+        
+    return filename
 
 
-def script_doc(tenv, script_path, output_dir=None):
-    """Generates documentation file for script to current working directory.
+def script_get_optparser(script_path):
+    """Gets optparser from script, if possible.
+    
+    Idea is to loop all globals after :func:`execfile` and look for
+    :obj:`optparser.OptionParser` instances.
+    
+    :param script_path: Path to the script.
+    :returns: :const:`None`, or :obj:`optparse.OptionParser`
+    
+    """
+    globs = {}
+    log.info("Python execfile script: %s" % script_path)
+    
+    execfile(script_path, globs)
+    for _n, val in globs.iteritems():
+        # TODO: LOW: We could probably do more duck-typing friendly check here
+        # too, but that is low priority.
+        if isinstance(val, OptionParser):
+            log.info("Found OptionParser.")
+            return val
+
+
+def script_doc_py(tenv, script_path, optparser, output_dir=None, 
+                  overwrite=False):
+    """Generates documentation file for script using :mod:`optparser`.
+    
+    :param tenv: Jinja2 templating environment.
+    :param optparser: :obj:`optparse.OptionParser`
+    :param script_path: Path to script.
+    :param output_dir: Output directory of generated documents.
+     
+    """
+    output_dir = output_dir or os.path.abspath(".")
+    
+    script_name = os.path.basename(script_path)
+    
+    filename = os.path.join(output_dir, "%s.rst" % script_name)
+    filename_t = os.path.join(output_dir, "%s.rst.template" % script_name)
+    
+    if os.path.exists(filename_t):
+        template = tenv.from_string(open(filename_t).read())
+    else:    
+        template = tenv.get_template("sphinkydoc/script_python.rst")
+        
+    tcontext = {'script_path' : script_path, 
+                'script_name' : script_name, 
+                'optparser' : optparser}
+
+    # Write template as "somescript.py"    
+    if overwrite or not os.path.exists(filename):
+        file_ = open(filename, 'w+')
+        file_.write(template.render(tcontext))
+        file_.close()
+        
+    return filename
+
+
+def script_doc_help(tenv, script_path, output_dir=None, overwrite=False):
+    """Generates documentation file for script using ``--help``.
     
     :param tenv: Jinja2 templating environment.
     :param script_path: Path to script.
@@ -154,32 +258,58 @@ def script_doc(tenv, script_path, output_dir=None):
     """
     output_dir = output_dir or os.path.abspath(".")
     
-    # TODO: Create more robust script --help parser, that can handle rST.
-    
     script_name = os.path.basename(script_path)
-    help = "" 
-    cmd = ["python", script_path, "--help"]
+    help_text = ""
     
+    cmd = ["python", script_path, "--help"]
     try:
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, 
                              stderr=subprocess.PIPE)
     except os.error:
         return
     else:
-        help, _stderr = p.communicate()
+        help_text, _stderr = p.communicate()
         
-    help = help.replace("\r", "")
-    
-    template = tenv.get_template("sphinkydoc/script.rst")
-    tcontext = {'script_path' : script_path, 'script_name' : script_name, 
-                'help' : help}
-
+    help_text = help_text.replace("\r", "")
     filename = os.path.join(output_dir, "%s.rst" % script_name)
+    filename_t = os.path.join(output_dir, "%s.rst.template" % script_name)
+    
+    if os.path.exists(filename_t):
+        template = tenv.from_string(open(filename_t).read())
+    else:    
+        template = tenv.get_template("sphinkydoc/script.rst")
+        
+    tcontext = {'script_path' : script_path, 
+                'script_name' : script_name, 
+                'help' : help_text}
 
     # Write template as "somescript.py"    
-    file_ = open(filename, 'w+')
-    file_.write(template.render(tcontext))
-    file_.close()
+    if overwrite or not os.path.exists(filename):
+        file_ = open(filename, 'w+')
+        file_.write(template.render(tcontext))
+        file_.close()
+        
+    return filename
+
+
+def script_doc(tenv, script_path, output_dir=None, overwrite=False):
+    """Generates documentation file for script.
+    
+    :param tenv: Jinja2 templating environment.
+    :param script_path: Path to script.
+    :param output_dir: Output directory of generated documents.
+     
+    """
+    
+    # First try to get the optparser
+    optparser = script_get_optparser(script_path)
+    if optparser:
+        return script_doc_py(tenv, script_path, optparser, 
+                             output_dir=output_dir, overwrite=overwrite)
+    
+    # Fallback to --help
+    return script_doc_help(tenv, script_path, output_dir=output_dir, 
+                          overwrite=overwrite)
 
 
 def caps_doc(tenv, caps_dir, ext='rst', caps_literals=None, output_dir=None, 
@@ -229,7 +359,7 @@ def caps_doc(tenv, caps_dir, ext='rst', caps_literals=None, output_dir=None,
             else:
                 caps(tenv, new_filepath)
             
-            caps_files.append(new_filename_wo_ext)
+            caps_files.append(new_filepath)
     
     return caps_files
 
