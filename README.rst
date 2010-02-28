@@ -37,29 +37,26 @@ If everything went well it should have created two directories for you
 ``myproject/docs/html/`` and ``myproject/docs/_temp/`` (which is deleted before 
 each run). The script simply looks the :term:`caps-files<caps-file>` by default 
 from directory *upwards from the execution directory*, you can also explicitely 
-specify (``--caps-dir``) the directory of :term:`caps-files<caps-file>`.
+specify using :option:`--caps-dir` the directory of 
+:term:`caps-files<caps-file>`.
 
 Here is another example, executed inside ``docs/`` directory of sphinkydoc 
 project, this is used to generate documentation for Sphinkydoc itself::
 
    $ sphinkydoc.py -s"../src/sphinkydoc.py" sphinkydocext examplepackage
     
-Little bit of explanation, ``-s`` means the next argument is some sort of 
-script or executable, not necessarily Python script. Sphinkydoc tries to call 
-your scripts using ``--help`` and generating documentation page according to 
-that [1]_. Then are listed modules and packages, these modules are crawled 
+Little bit of explanation, :option:`-s` means the next argument is some sort of 
+script or executable, not necessarily Python script. First Sphinkydoc tries to
+get the :obj:`~optparser.OptionParser` of your script, if it fails it tries to 
+call your scripts using ``--help`` and generating documentation page according 
+to that. Then are listed modules and packages, these modules are crawled 
 recursively for Python docstrings. First of the modules given is a sort of 
 primary module of your project, where Sphinkydoc also looks for variables 
 ``__project__``, ``__version__``, ``__release__``, ``__copyright__``. If you 
 type ``|release|`` in e.g. ``README``, it is rendered as same string as in your
 module. This way you can maintain version information in *one place*.
 
-.. seealso:: You can see the options of :ref:`sphinkydoc.py in the documentation 
-	<sphinkydoc.py>`.
-
-.. [1] Currently the script output is treated as literal, ideally there should
-	be a more robust help parser that can convert it to reStructuredText, if you 
-	are interested to help on this matter see 
-	:func:`sphinkydocext.generate.script_doc`.
+.. seealso:: :ref:`Full option listing for sphinkydoc.py <sphinkydoc.py>` in the 
+	documentation.
 
 .. _Sphinx documentation generator: http://sphinx.pocoo.org/

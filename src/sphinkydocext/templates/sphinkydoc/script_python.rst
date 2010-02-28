@@ -4,6 +4,8 @@
 
 .. program:: {{ script_name }}
 
+{{ optparser.usage }}
+
 {# Non groupped options #}
 {% for opt in optparser.option_list %}
 

@@ -99,10 +99,11 @@ log.setLevel(logging.INFO) # TODO: DEBUG!
 from sphinkydocext import directives, utils, templating, generate
 from sphinkydocext.generate import caps_doc
 from sphinkydocext.templating import templating_environment
-from sphinkydocext.utils import copy_tree, multi_matcher, path_to_posix,\
+from sphinkydocext.utils import copy_tree, multi_matcher, path_to_posix, \
     truncate_path
 import re
 import sys
+
 
 __version__ = "0.5.5"
 __release__ = "0.5.5 alpha"
@@ -113,8 +114,8 @@ __all__ = ['directives', 'utils', 'setup', 'templating', 'generate',
            'COPYING', 'ALL', 'ALL_ROOT', 'ALL_SUBINDEX', 'log']
 
 # Pylint-disable settings ----------------
-# Todo, Strings, Unused:
-#     pylint: disable-msg=W0511,W0105,W0613
+# Todo, Strings, Unused, Map:
+#     pylint: disable-msg=W0511,W0105,W0613,W0141
 
 COPYING = re.compile('^COPYING(\..*)?$')
 """Matches all COPYING.* files"""
@@ -136,6 +137,8 @@ def builder_inited(app):
     """
     conf = app.config
     
+    truncate_path_rst = lambda p: truncate_path(p, directory=app.srcdir, 
+                                                extension='rst')
     tenv = templating_environment()
     caps_files = []
     docs_files = []
@@ -162,16 +165,15 @@ def builder_inited(app):
         _files = copy_tree(conf.sphinkydoc_docs_dir, app.srcdir, 
                                skip_dirs=['html', '_temp'])
         
-        docs_files = [truncate_path(p, app.srcdir, 'rst') 
-                      for p in _files if p.endswith('.rst')]
-    
+        docs_files = filter(lambda p: not p.endswith('.rst'), 
+                            map(truncate_path_rst, _files))    
     # Caps files generation
     if conf.sphinkydoc_caps_dir:
         _files = caps_doc(tenv, conf.sphinkydoc_caps_dir, ext="rst", 
                           caps_literals=conf.sphinkydoc_caps_literal, 
                           output_dir=app.srcdir)
-        caps_files = [truncate_path(p, app.srcdir, 'rst')
-                      for p in _files if p.endswith('.rst')]
+        caps_files = filter(lambda p: not p.endswith('.rst'), 
+                            map(truncate_path_rst, _files))
         
     # Should we generate HTML shortcut file to caps directory?
     if conf.sphinkydoc_readme_html and conf.sphinkydoc_caps_dir:
@@ -183,13 +185,13 @@ def builder_inited(app):
         generate.all_doc(tenv, conf.sphinkydoc_modules, conf.sphinkydoc_scripts,
                          output_dir=app.srcdir)
         
-    module_files = [truncate_path(p, app.srcdir, 'rst') for p in _module_files]
-    script_files = [truncate_path(p, app.srcdir, 'rst') for p in _script_files]
+    module_files = map(truncate_path_rst, _module_files)
+    script_files = map(truncate_path_rst, _script_files)
     
-    module_files = [path_to_posix(fp) for fp in module_files]
-    script_files = [path_to_posix(fp) for fp in script_files]    
-    docs_files = [path_to_posix(fp) for fp in docs_files]
-    caps_files = [path_to_posix(fp) for fp in caps_files]
+    module_files = map(path_to_posix, module_files)
+    script_files = map(path_to_posix, script_files)    
+    docs_files = map(path_to_posix, docs_files)
+    caps_files = map(path_to_posix, caps_files)
     
     for s in set(script_files + module_files).intersection(set(docs_files)):
         docs_files.remove(s)
@@ -197,7 +199,6 @@ def builder_inited(app):
     def categorize(_files, category_matchers):
         # Categorizes the items to dictionary (always to first matching category) 
         for n in _files:
-            print >> sys.stderr, "Categorizing: %s" % n
             for cat in category_order:
                 if category_matchers[cat](n):
                     categorized.setdefault("%s_files" % cat, []).append(n)
@@ -209,12 +210,6 @@ def builder_inited(app):
     # Included docs should have different extension
     for inc in categorized.get('included_files', []):
         generate.included_doc(tenv, inc, app.srcdir)
-        
-    # Conf unused docs does not work for included files, graah...
-    # conf.unused_docs.extend(['README.rst']) 
-
-    # print >> sys.stderr, "Docs files: %s" % docs_files
-    # print >> sys.stderr, "Caps files: %s" % caps_files
     
     # Index generation
     if conf.sphinkydoc_index:

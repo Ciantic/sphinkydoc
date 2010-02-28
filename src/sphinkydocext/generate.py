@@ -19,6 +19,7 @@ def index_doc(tenv, tcontext, output_dir=None, overwrite=False):
     :param tenv: Templating environment, retrieved e.g. by 
         :func:`sphinkydocext.templating.templating_environment`.
     :param output_dir: Output directory of generated document.
+    :returns: Generated document path.
         
     """
     
@@ -53,6 +54,7 @@ def readme_html_doc(tenv, docs_url, output_dir=None, overwrite=False):
         :func:`sphinkydocext.templating.templating_environment`.
     
     :param output_dir: Output directory of generated document.
+    :returns: Generated document path.
     
     """
     output_dir = output_dir or os.path.abspath(".")
@@ -66,6 +68,8 @@ def readme_html_doc(tenv, docs_url, output_dir=None, overwrite=False):
         f = open(filename, "w+")
         f.write(rendition)
         f.close()
+        
+    return filename
 
 def included_doc(tenv, docname, src_dir, ext="rst", overwrite=False):
     """Included documents pre-processed.
@@ -78,6 +82,7 @@ def included_doc(tenv, docname, src_dir, ext="rst", overwrite=False):
     :param docname: Name of the included doc, without extension.
     :param src_dir: Source directory where to look for.
     :param ext: Extension of source files, defaults to ".rst".
+    :returns: Generated document path.
     
     """
     src = os.path.join(src_dir, "%s.%s" % (docname, ext))
@@ -101,6 +106,8 @@ def all_doc(tenv, module_names=None, script_paths=None, output_dir=None,
         for these. 
     
     :param output_dir: Output directory of generated document.
+    
+    :returns: Tuple of generated module paths, and generated script paths.
     
     """
     output_dir = output_dir or os.path.abspath(".")
@@ -135,6 +142,7 @@ def recursive_module_doc(tenv, module_name, output_dir=None, overwrite=False):
     :param tenv: Jinja2 templating environment.
     :param module_name: Module 
     :param output_dir: Output directory of generated documents.
+    :returns: List of generated document paths.
     
     """
     output_dir = output_dir or os.path.abspath(".")
@@ -165,7 +173,7 @@ def module_doc(tenv, module_name, output_dir=None, overwrite=False):
     :param tenv: Jinja2 templating environment.
     :param module_name: Full name of the module.
     :param output_dir: Output directory of generated documents.
-    
+    :returns: Generated document path.
      
     """
     output_dir = output_dir or os.path.abspath(".")
@@ -221,6 +229,7 @@ def script_doc_py(tenv, script_path, optparser, output_dir=None,
     :param optparser: :obj:`optparse.OptionParser`
     :param script_path: Path to script.
     :param output_dir: Output directory of generated documents.
+    :returns: Generated document path.
      
     """
     output_dir = output_dir or os.path.abspath(".")
@@ -248,12 +257,34 @@ def script_doc_py(tenv, script_path, optparser, output_dir=None,
     return filename
 
 
+def conf_py(tenv, tcontext, output_dir=None, overwrite=False):
+    """Generates sphinx conf.py, cannot be used within extension.
+    
+    :param tenv: Jinja2 templating environment.
+    :param output_dir: Output directory of generated documents.
+    :returns: Generated document path.
+     
+    """
+    template = tenv.get_template("sphinkydoc/conf.py.template")
+    
+    rendition = template.render(tcontext)
+    filename = os.path.join(output_dir, "conf.py")
+    
+    if overwrite or not os.path.exists(filename):
+        f = open(filename, "w+")
+        f.write(rendition)
+        f.close()
+        
+    return filename
+
+
 def script_doc_help(tenv, script_path, output_dir=None, overwrite=False):
     """Generates documentation file for script using ``--help``.
     
     :param tenv: Jinja2 templating environment.
     :param script_path: Path to script.
     :param output_dir: Output directory of generated documents.
+    :returns: Generated document path.
      
     """
     output_dir = output_dir or os.path.abspath(".")
@@ -298,9 +329,9 @@ def script_doc(tenv, script_path, output_dir=None, overwrite=False):
     :param tenv: Jinja2 templating environment.
     :param script_path: Path to script.
     :param output_dir: Output directory of generated documents.
+    :returns: Generated document path.
      
     """
-    
     # First try to get the optparser
     optparser = script_get_optparser(script_path)
     if optparser:
@@ -326,7 +357,7 @@ def caps_doc(tenv, caps_dir, ext='rst', caps_literals=None, output_dir=None,
     :param output_dir: Output directory of generated documents.
     :param dry_run: Dry run only, no copying or other harmful changes.
     
-    :returns: List of caps files docced without extension. 
+    :returns: List of generated document paths. 
     
     """
     caps_literals = caps_literals or []

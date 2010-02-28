@@ -1,5 +1,5 @@
-#Fri Feb 26 22:45:37 EET 2010
+#Sun Feb 28 21:52:20 EET 2010
 eclipse.preferences.version=1
-encoding//src/sphinkydocext/data/conf.py.template=utf-8
 encoding//src/sphinkydocext/directives/sphinkydoc.py=utf-8
+encoding//src/sphinkydocext/templates/sphinkydoc/conf.py.template=utf-8
 encoding//src/sphinkydocext/templating.py=utf-8

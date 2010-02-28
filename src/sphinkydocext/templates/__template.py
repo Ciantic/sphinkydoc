@@ -1,4 +1,5 @@
 """Magic template additions."""
+from sphinkydocext import log
 
 def indent(num, text):
     """Indents the string by given number."""
@@ -18,22 +19,22 @@ def module_split(module_name):
         ms.append(":mod:`%s<%s>`" % (subm, ".".join(m)))
         
     return ". ".join(ms) 
-
-def short_opts(opt):
-    """Returns list of short opts.
-    
-    :param opt: :obj:`optparser.Option`
-    
-    """
-    return getattr(opt, "_short_opts", [])
-
-def long_opts(opt):
-    """Returns list of long opts.
-    
-    :param opt: :obj:`optparser.Option`
-    
-    """
-    return getattr(opt, "_long_opts", [])
+#
+#def short_opts(opt):
+#    """Returns list of short opts.
+#    
+#    :param opt: :obj:`optparser.Option`
+#    
+#    """
+#    return getattr(opt, "_short_opts", [])
+#
+#def long_opts(opt):
+#    """Returns list of long opts.
+#    
+#    :param opt: :obj:`optparser.Option`
+#    
+#    """
+#    return getattr(opt, "_long_opts", [])
 
 def cmdoption(opt):
     """Tries to turn :obj:`optparser.Option` to cmdoption.
@@ -44,8 +45,9 @@ def cmdoption(opt):
     """
     opts = []
     for o in (opt._short_opts + opt._long_opts):
-        if opt.metavar:
-            opts.append('%s <%s>' % (o, opt.metavar))
+        if opt.metavar or opt.nargs:
+            log.info("Option has nargs: %s" % opt.nargs)
+            opts.append('%s <%s>' % (o, opt.metavar or opt.dest.upper()))
         else:
             opts.append(o)
             
@@ -61,6 +63,7 @@ def cmdoption(opt):
 def pre_template(env):
     env.globals['module_split'] = module_split
     env.globals['indent'] = indent
-    env.globals['short_opts'] = short_opts
-    env.globals['long_opts'] = long_opts
+    env.globals['repr'] = repr    
+#    env.globals['short_opts'] = short_opts
+#    env.globals['long_opts'] = long_opts
     env.globals['cmdoption'] = cmdoption
