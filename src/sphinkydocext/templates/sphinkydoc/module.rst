@@ -45,7 +45,7 @@ Members
 {% if datas %}	
 
 {# datas are confusing name, I decided to call them Attributes #}
-.. rubric:: Attribute definitions
+.. rubric:: Data definitions
 
 {% for data in datas %}
 .. autodata:: {{ fullname }}.{{ data }}

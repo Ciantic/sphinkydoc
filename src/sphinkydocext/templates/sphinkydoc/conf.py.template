@@ -17,7 +17,10 @@ version = {{ version }}
 release = {{ release }}
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
-              'sphinx.ext.autosummary', 'sphinkydocext']
+              'sphinx.ext.autosummary', 'sphinx.ext.intersphinx', 
+              'sphinkydocext']
+              
+intersphinx_mapping = {'http://docs.python.org/dev': None}
 
 templates_path = ['templates']
 source_suffix = '.rst'
@@ -28,7 +31,6 @@ pygments_style = 'sphinx'
 # HTML ---------------------------------------
 
 html_theme = 'default'
-html_static_path = ['static']
 
 # Autodoc ------------------------------------
 

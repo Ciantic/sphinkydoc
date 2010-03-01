@@ -1,10 +1,9 @@
 """Sphinkydoc document file generation."""
 
-from optparse import OptionParser
 from sphinkydocext import log
 from sphinkydocext.templating import caps_literal, caps
 from sphinkydocext.utils import multi_matcher, get_submodules, \
-    get_module_members
+    get_module_members, script_get_optparser, is_python_script
 from sphinx.ext.autosummary import import_by_name
 import os
 import re
@@ -35,6 +34,7 @@ def index_doc(tenv, tcontext, output_dir=None, overwrite=False):
         f = open(filename, "w+")
         f.write(rendition)
         f.close()
+        log.info("Index generated %s file." % filename)
     
     return filename
 
@@ -68,8 +68,10 @@ def readme_html_doc(tenv, docs_url, output_dir=None, overwrite=False):
         f = open(filename, "w+")
         f.write(rendition)
         f.close()
+        log.info("README.html generated %s file." % filename)
         
     return filename
+
 
 def included_doc(tenv, docname, src_dir, ext="rst", overwrite=False):
     """Included documents pre-processed.
@@ -89,8 +91,31 @@ def included_doc(tenv, docname, src_dir, ext="rst", overwrite=False):
     dst = os.path.join(src_dir, "%s.%s" % (docname, "inc"))
     if overwrite or not os.path.exists(dst):
         shutil.move(src, dst)
+        log.info("Included %s, moved to %s" % (src, dst))
     return dst
+
+
+def conf_py(tenv, tcontext, output_dir=None, overwrite=False):
+    """Generates sphinx conf.py, cannot be used within extension.
     
+    :param tenv: Jinja2 templating environment.
+    :param output_dir: Output directory of generated documents.
+    :returns: Generated document path.
+     
+    """
+    template = tenv.get_template("sphinkydoc/conf.py.template")
+    
+    rendition = template.render(tcontext)
+    filename = os.path.join(output_dir, "conf.py")
+    
+    if overwrite or not os.path.exists(filename):
+        f = open(filename, "w+")
+        f.write(rendition)
+        f.close()
+        log.info("Conf generated %s file." % filename)
+        
+    return filename
+
 
 def all_doc(tenv, module_names=None, script_paths=None, output_dir=None, 
             overwrite=False):
@@ -135,6 +160,7 @@ def all_doc(tenv, module_names=None, script_paths=None, output_dir=None,
     
     return module_files, script_files
 
+
 def recursive_module_doc(tenv, module_name, output_dir=None, overwrite=False):
     """Recursively generates module documentation also for all submodules,
     and subpackages.
@@ -167,6 +193,7 @@ def recursive_module_doc(tenv, module_name, output_dir=None, overwrite=False):
     
     return module_files
 
+
 def module_doc(tenv, module_name, output_dir=None, overwrite=False):
     """Generates documentation for module or package.
     
@@ -195,30 +222,9 @@ def module_doc(tenv, module_name, output_dir=None, overwrite=False):
         file_ = open(filename, 'w+')
         file_.write(template.render(tcontext))
         file_.close()
+        log.info("Module generated %s file." % filename)
         
     return filename
-
-
-def script_get_optparser(script_path):
-    """Gets optparser from script, if possible.
-    
-    Idea is to loop all globals after :func:`execfile` and look for
-    :obj:`optparser.OptionParser` instances.
-    
-    :param script_path: Path to the script.
-    :returns: :const:`None`, or :obj:`optparse.OptionParser`
-    
-    """
-    globs = {}
-    log.info("Python execfile script: %s" % script_path)
-    
-    execfile(script_path, globs)
-    for _n, val in globs.iteritems():
-        # TODO: LOW: We could probably do more duck-typing friendly check here
-        # too, but that is low priority.
-        if isinstance(val, OptionParser):
-            log.info("Found OptionParser.")
-            return val
 
 
 def script_doc_py(tenv, script_path, optparser, output_dir=None, 
@@ -253,27 +259,7 @@ def script_doc_py(tenv, script_path, optparser, output_dir=None,
         file_ = open(filename, 'w+')
         file_.write(template.render(tcontext))
         file_.close()
-        
-    return filename
-
-
-def conf_py(tenv, tcontext, output_dir=None, overwrite=False):
-    """Generates sphinx conf.py, cannot be used within extension.
-    
-    :param tenv: Jinja2 templating environment.
-    :param output_dir: Output directory of generated documents.
-    :returns: Generated document path.
-     
-    """
-    template = tenv.get_template("sphinkydoc/conf.py.template")
-    
-    rendition = template.render(tcontext)
-    filename = os.path.join(output_dir, "conf.py")
-    
-    if overwrite or not os.path.exists(filename):
-        f = open(filename, "w+")
-        f.write(rendition)
-        f.close()
+        log.info("Script generated %s file." % filename)
         
     return filename
 
@@ -292,6 +278,7 @@ def script_doc_help(tenv, script_path, output_dir=None, overwrite=False):
     script_name = os.path.basename(script_path)
     help_text = ""
     
+    # Call the script using "--help"
     cmd = ["python", script_path, "--help"]
     try:
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, 
@@ -319,6 +306,7 @@ def script_doc_help(tenv, script_path, output_dir=None, overwrite=False):
         file_ = open(filename, 'w+')
         file_.write(template.render(tcontext))
         file_.close()
+        log.info("Script generated %s file." % filename)
         
     return filename
 
@@ -332,19 +320,21 @@ def script_doc(tenv, script_path, output_dir=None, overwrite=False):
     :returns: Generated document path.
      
     """
-    # First try to get the optparser
-    optparser = script_get_optparser(script_path)
-    if optparser:
-        return script_doc_py(tenv, script_path, optparser, 
-                             output_dir=output_dir, overwrite=overwrite)
+    
+    # First tries to get optparser for python scripts
+    if is_python_script(script_path):
+        optparser = script_get_optparser(script_path)
+        if optparser:
+            return script_doc_py(tenv, script_path, optparser, 
+                                 output_dir=output_dir, overwrite=overwrite)
     
     # Fallback to --help
     return script_doc_help(tenv, script_path, output_dir=output_dir, 
-                          overwrite=overwrite)
+                           overwrite=overwrite)
 
 
 def caps_doc(tenv, caps_dir, ext='rst', caps_literals=None, output_dir=None, 
-             dry_run=False):
+             dry_run=False, overwrite=False):
     """Generate documentation from caps files in ``caps_dir``.
     
     Caps files are files such as INSTALL, COPYING, README, which contain 
@@ -382,8 +372,9 @@ def caps_doc(tenv, caps_dir, ext='rst', caps_literals=None, output_dir=None,
             new_filepath = os.path.join(output_dir, new_filename)
             
             if not dry_run:
-                if not os.path.exists(new_filepath):
+                if overwrite or not os.path.exists(new_filepath):
                     shutil.copy(filepath, new_filepath)
+                    log.info("Caps %s copied to %s" % (filepath, new_filepath))
                     
             if caps_matcher(new_filename_wo_ext):        
                 caps_literal(tenv, new_filepath)

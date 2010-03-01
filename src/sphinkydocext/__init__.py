@@ -23,25 +23,30 @@ Sphinx conf.py variables
     
 .. rubric:: Docs generation
     
-:ref:`sphinkydoc_modules`
+.. confval:: sphinkydoc_modules
+
     List of module names which documentation is generated using
     :func:`~sphinkydocext.generate.module_doc`, defaults to empty list.
     
-:ref:`sphinkydoc_scripts`
+.. confval:: sphinkydoc_scripts
+
     List of paths to scripts which documentation is generated using
     :func:`~sphinkydocext.generate.script_doc`, defaults to empty list.
     
-:ref:`sphinkydoc_index`
+.. confval:: sphinkydoc_index
+
     Indicating whether `index.rst` should be generated using
     :func:`~sphinkydocext.generate.index_doc`, defaults to :const:`False`.
     
-:ref:`sphinkydoc_readme_html`
+.. confval:: sphinkydoc_readme_html
+
     Indicating whether `README.html` should be generated to caps directory using
     :func:`~sphinkydocext.generate.readme_html_doc`, defaults to :const:`False`.
 
 .. rubric:: Special directories
     
-:ref:`sphinkydoc_docs_dir`
+.. confval:: sphinkydoc_docs_dir
+
     Directory of *additional docs* directory, files from this directory are
     copied to Sphinx configuration directory before building, defaults to
     :const:`None` and is not used. 
@@ -49,44 +54,51 @@ Sphinx conf.py variables
     .. warning:: Do not try to set this as same directory as your Sphinx
         configuration directory.
     
-:ref:`sphinkydoc_caps_dir`
+.. confval:: sphinkydoc_caps_dir
+
     Directory of :term:`caps-files<caps-file>`, defaults to :const:`None` and is
     not used.
 
 .. rubric:: Files in caps dir
 
-These options require that `sphinkydoc_caps_dir` is set.
+These options require that :confval:`sphinkydoc_caps_dir` is set.
     
-:ref:`sphinkydoc_caps_literal`
+.. confval:: sphinkydoc_caps_literal
+
     List of :term:`caps files<caps-file>` that are treated as literally,
     defaults to [:data:`COPYING`].
     
-:ref:`sphinkydoc_caps_included`
-    List of :term:`caps files<caps-file>` that are included and doesn't have
-    a separate page, defaults to [``'README'``].
+.. confval:: sphinkydoc_caps_included
+
+    List of :term:`caps files<caps-file>` that are included and doesn't have a
+    separate page, defaults to [``'README'``].
     
-:ref:`sphinkydoc_caps_about`
+.. confval:: sphinkydoc_caps_about
+
     List of :term:`caps files<caps-file>` that are categorized as About,
-    defaults to [``'AUTHORS'``, ``'THANKS'``, :data:`COPYING`,
-    ``'LICENSE'``].
+    defaults to [``'AUTHORS'``, ``'THANKS'``, :data:`COPYING`, ``'LICENSE'``].
     
-:ref:`sphinkydoc_caps_topic`
+.. confval:: sphinkydoc_caps_topic
+
     List of :term:`caps files<caps-file>` that are categorized as Topic,
     defaults to [:data:`ALL`].
     
 .. rubric:: Files in docs dir
 
-These options require that `sphinkydoc_docs_dir` is set.
+These options require that :confval:`sphinkydoc_docs_dir` is set.
     
-:ref:`sphinkydoc_included`
+.. confval:: sphinkydoc_included
+
     List of normal docs files that are included and doesn't have a separate
     page, defaults to empty list.
     
-:ref:`sphinkydoc_about`
+.. confval:: sphinkydoc_about
+
     List of normal docs files that are categorized as About, defaults to empty
     list.
     
-:ref:`sphinkydoc_topic`
+.. confval:: sphinkydoc_topic
+
     List of normal docs files that are categorized as Topic, defaults to
     [:data:`ALL_ROOT`, :data:`ALL_SUBINDEX`].
     
@@ -247,6 +259,8 @@ def setup(app):
     
     app.add_config_value('sphinkydoc_modules', [], '')
     app.add_config_value('sphinkydoc_scripts', [], '')
+    app.add_description_unit('confval', 'confval', 
+                             'pair: %s; configuration value')
     
     app.add_config_value('sphinkydoc_index', False, '')
     app.add_config_value('sphinkydoc_readme_html', False, '')

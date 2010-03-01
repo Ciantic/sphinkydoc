@@ -1,11 +1,13 @@
 """Utils for sphinkydoc"""
 from distutils.dir_util import mkpath
 from pkgutil import iter_modules
+import optparse
 import inspect
 import logging
 import os
 import re
 import sys
+from sphinkydocext import log
 
 
 def truncate_path(path, directory=None, extension=None):
@@ -147,6 +149,46 @@ def copy_tree(src, dst, preserve_mode=1, preserve_times=1, preserve_symlinks=0,
     return outputs
 
 
+def is_python_script(script_path):
+    """Determine if given script path is python script.
+    
+    :param script_path: Path to script
+    :rtype: bool
+    
+    """
+    if script_path.endswith(".py") or script_path.endswith(".pyw"):
+        return True
+    
+    # TODO: !# python test.
+    
+    return False
+
+
+def script_get_optparser(script_path):
+    """Gets first :obj:`~optparse.OptionParser` from script, if possible.
+    
+    Idea is to loop all globals after :func:`execfile` and look for
+    :obj:`optparse.OptionParser` instances.
+    
+    :param script_path: Path to the script.
+    :returns: :const:`None`, or :obj:`optparse.OptionParser`
+    
+    """
+    globs = {}
+    log.info("Looking for optparser, by execfile script: %s" % script_path)
+    try:
+        execfile(script_path, globs)
+    except:
+        log.info("Script %s cannot be executed using execfile" % script_path)
+        return
+    
+    for _n, val in globs.iteritems():
+        # TODO: LOW: We could probably do more duck-typing friendly check here
+        # too, but that is low priority.
+        if isinstance(val, optparse.OptionParser):
+            return val
+        
+
 def all_filterer(module, use_all=True):
     """All filterer for module.
     
@@ -159,8 +201,11 @@ def all_filterer(module, use_all=True):
         custom_all = lambda m,n: n in module.__all__
     else:
         has_all = False
-        print >> sys.stderr, ("Module %s is missing __all__, falling back to "
-                              "public members" % module.__name__)
+        
+        if use_all:
+            log.warning("Module %s is missing __all__, falling back to "
+                        "public members" % module.__name__)
+        
         custom_all = lambda m,n: not n.startswith("_")
     return has_all, custom_all
 

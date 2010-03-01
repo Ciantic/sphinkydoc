@@ -6,6 +6,8 @@
 
 {{ optparser.usage }}
 
+{{ optparser.description }}
+
 {# Non groupped options #}
 {% for opt in optparser.option_list %}
 
