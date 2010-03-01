@@ -1,4 +1,4 @@
-"""Sphinkydoc (Sphinx Extension) 
+"""Sphinkydocext -- Sphinx Extension of Sphinkydoc 
 
 This is Sphinx extension that is supposed to make Sphinx more ad-hoc for smaller
 projects. When using :ref:`sphinkydoc.py` as documentation builder you don't 
@@ -21,8 +21,9 @@ the generated files has to appear to root of Sphinx configuration.
 Sphinx conf.py variables
 ------------------------
     
-.. rubric:: Docs generation
-    
+Docs generation
+'''''''''''''''
+
 .. confval:: sphinkydoc_modules
 
     List of module names which documentation is generated using
@@ -43,13 +44,14 @@ Sphinx conf.py variables
     Indicating whether `README.html` should be generated to caps directory using
     :func:`~sphinkydocext.generate.readme_html_doc`, defaults to :const:`False`.
 
-.. rubric:: Special directories
-    
+Special directories
+'''''''''''''''''''
+
 .. confval:: sphinkydoc_docs_dir
 
     Directory of *additional docs* directory, files from this directory are
     copied to Sphinx configuration directory before building, defaults to
-    :const:`None` and is not used. 
+    :const:`None` and is not used.     
     
     .. warning:: Do not try to set this as same directory as your Sphinx
         configuration directory.
@@ -59,9 +61,13 @@ Sphinx conf.py variables
     Directory of :term:`caps-files<caps-file>`, defaults to :const:`None` and is
     not used.
 
-.. rubric:: Files in caps dir
+.. note:: Relative paths are converted to absolute during `builder-init`, and
+    thus should be safe to use.
 
-These options require that :confval:`sphinkydoc_caps_dir` is set.
+Files in caps dir
+'''''''''''''''''
+
+These options *require* that :confval:`sphinkydoc_caps_dir` is set.
     
 .. confval:: sphinkydoc_caps_literal
 
@@ -83,7 +89,8 @@ These options require that :confval:`sphinkydoc_caps_dir` is set.
     List of :term:`caps files<caps-file>` that are categorized as Topic,
     defaults to [:data:`ALL`].
     
-.. rubric:: Files in docs dir
+Files in docs dir
+'''''''''''''''''
 
 These options require that :confval:`sphinkydoc_docs_dir` is set.
     
@@ -104,8 +111,12 @@ These options require that :confval:`sphinkydoc_docs_dir` is set.
     
 """
 import logging
+import os
 logging.basicConfig()
+
 log = logging.getLogger("sphinkydoc")
+"""Sphinkydoc logger"""
+
 log.setLevel(logging.INFO) # TODO: DEBUG!
 
 from sphinkydocext import directives, utils, templating, generate
@@ -141,6 +152,9 @@ ALL_ROOT = re.compile('^[^/]+$')
 ALL_SUBINDEX = re.compile('.*/index$') # Amazingly ".*" is required.
 """Matches all subdirectory index files"""
 
+THEMES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'themes'))
+"""Additional themes provided by sphinkydoc"""
+
 def builder_inited(app):
     """Sphinx builder-inited callback handler.
     
@@ -154,6 +168,8 @@ def builder_inited(app):
     tenv = templating_environment()
     caps_files = []
     docs_files = []
+    docs_dir = os.path.abspath(conf.sphinkydoc_docs_dir)
+    caps_dir = os.path.abspath(conf.sphinkydoc_caps_dir)
     
     categorized = {}
     # Order of the items in category matchers, one could put this in the list of
@@ -173,24 +189,22 @@ def builder_inited(app):
     }
     
     # Additional docs copier
-    if conf.sphinkydoc_docs_dir:
-        _files = copy_tree(conf.sphinkydoc_docs_dir, app.srcdir, 
-                               skip_dirs=['html', '_temp'])
-        
+    if docs_dir and os.path.abspath(app.srcdir) != docs_dir:
+        _files = copy_tree(docs_dir, app.srcdir, skip_dirs=['html', '_temp'])
         docs_files = filter(lambda p: not p.endswith('.rst'), 
                             map(truncate_path_rst, _files))    
     # Caps files generation
-    if conf.sphinkydoc_caps_dir:
-        _files = caps_doc(tenv, conf.sphinkydoc_caps_dir, ext="rst", 
+    if caps_dir:
+        _files = caps_doc(tenv, caps_dir, ext="rst", 
                           caps_literals=conf.sphinkydoc_caps_literal, 
                           output_dir=app.srcdir)
         caps_files = filter(lambda p: not p.endswith('.rst'), 
                             map(truncate_path_rst, _files))
         
     # Should we generate HTML shortcut file to caps directory?
-    if conf.sphinkydoc_readme_html and conf.sphinkydoc_caps_dir:
+    if conf.sphinkydoc_readme_html and caps_dir:
         generate.readme_html_doc(tenv, "docs/html/index.html", 
-                                 output_dir=conf.sphinkydoc_caps_dir)
+                                 output_dir=caps_dir)
         
     # Notice that following generates nothing, if the lists are empty:
     _module_files, _script_files = \
@@ -246,6 +260,7 @@ def setup(app):
     from sphinkydocext.directives.sphinkydoc import SphinkydocModules, \
         SphinkydocScripts, sphinkydoc_toc
         
+    app.config.html_theme_path.append(THEMES_DIR)
     app.add_config_value('sphinkydoc_caps_literal', [COPYING], '')
     
     app.add_config_value('sphinkydoc_caps_included', ['README'], '')
@@ -259,8 +274,12 @@ def setup(app):
     
     app.add_config_value('sphinkydoc_modules', [], '')
     app.add_config_value('sphinkydoc_scripts', [], '')
+    
     app.add_description_unit('confval', 'confval', 
                              'pair: %s; configuration value')
+    
+    app.add_description_unit('program-usage', 'program-usage', 
+                             '')
     
     app.add_config_value('sphinkydoc_index', False, '')
     app.add_config_value('sphinkydoc_readme_html', False, '')

@@ -4,9 +4,9 @@
 
 .. program:: {{ script_name }}
 
-{{ optparser.usage }}
+.. program-usage:: {{ optparser.get_usage() }}
 
-{{ optparser.description }}
+{{ optparser.get_description() }}
 
 {# Non groupped options #}
 {% for opt in optparser.option_list %}

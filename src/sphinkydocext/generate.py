@@ -1,4 +1,9 @@
-"""Sphinkydoc document file generation."""
+"""Sphinkydoc document file generation.
+
+.. note:: None of the generated documents overwrite existing documents this is to ensure 
+    that your documents does not get lost.
+
+"""
 
 from sphinkydocext import log
 from sphinkydocext.templating import caps_literal, caps

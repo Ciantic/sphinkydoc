@@ -30,7 +30,7 @@ pygments_style = 'sphinx'
 
 # HTML ---------------------------------------
 
-html_theme = 'default'
+html_theme = "sphinkydoc"
 
 # Autodoc ------------------------------------
 

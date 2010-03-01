@@ -1,0 +1,60 @@
+@import "default.css"; /* Inherited theme settings */
+
+/* Widen the sidebar */
+div.sphinxsidebar {
+    width: 300px;
+}
+
+div.bodywrapper {
+    margin:0 0 0 300px;
+}
+
+/* Search box widening */
+.search [type="text"] {
+    float: left;
+    width: 80%;
+    margin-right: 5px;
+}
+.search [type="submit"] {
+    float: left;
+    width: 15%;
+}
+
+/* Field list table mangling */
+.field-list th {
+    font-size: 100%;
+    font-weight: normal;
+    font-style: italic;
+    text-align: right;
+}
+
+table.docutils.field-list {
+    border: 0;
+}
+
+.field-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+/* Table peculiarities */
+th {
+    background-color: transparent;
+}
+
+table.docutils {
+    border-collapse: collapse;
+    border-top: 1px solid #ababab;
+    border-right: 1px solid #ababab;
+}
+
+table.docutils td {
+    border: 0;
+    border-bottom: 1px solid #ababab;
+    border-left: 1px solid #ababab;
+}
+
+/* Obtrusive gray background */
+tt {
+    background-color: transparent;
+}

@@ -48,7 +48,7 @@ Members
 .. rubric:: Data definitions
 
 {% for data in datas %}
-.. autodata:: {{ fullname }}.{{ data }}
+.. autodata:: {{ data }}
 {% endfor %}
 {% endif %}
 {% endblock %}

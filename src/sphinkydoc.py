@@ -12,7 +12,7 @@ DESCRIPTION = """Sphinx automated documentation generator and builder script.
 Main purpose is to generate documentation for small projects, which usually does
 not require external written documents."""
 
-parser = optparse.OptionParser("""sphinkydoc.py [<MODULE>, ...]""", 
+parser = optparse.OptionParser("""%prog [options] [primarymodule, ...]""", 
                                description=DESCRIPTION)
 """Main parser.
 
@@ -26,8 +26,8 @@ parser.add_option("-n", "--dry-run",
                   dest="dry_run", action="store_true", default=False)
 parser.add_option("-o", "--output-dir",
                   help="outputs the html and temp directory to this "
-                       "directory",
-                  dest="output", default=os.getcwd())
+                       "directory, defaults to current working directory",
+                  dest="output", default=None)
 parser.add_option("-b", "--sphinx-build-py",
                   help="path to the sphinx-build.py script",
                   dest="sphinx_build", default="sphinx-build.py")
@@ -45,7 +45,7 @@ parser.add_option("", "--caps-dir",
                   dest="caps_dir", default="../")
 parser.add_option("-l", "--caps-literal",
                   help="caps files which are included as literal files, "
-                       "defaults to COPYING, COPYING.LESSER, COPYING.LIB.",
+                       "defaults to COPYING.* files",
                   metavar="CAPS_FILE",
                   dest="caps_literals", action="append", 
                   default=['COPYING', 'COPYING.LESSER', 'COPYING.LIB'])
@@ -58,9 +58,10 @@ logging.basicConfig()
 log = logging.getLogger("sphinkydoc")
 
 CONFIG_FILENAME = 'conf.py'
-TEMP_CONFIGURATION_DIR = '_temp'
+SPHINX_DIR = '_temp'
+HTML_DIR = 'html'
 
-def run_sphinx_build(sphinx_conf_dir, dry_run=False, 
+def run_sphinx_build(sphinx_conf_dir, html_dir, dry_run=False,
                      sphinx_build='sphinx-build.py'):
     """Runs the sphinx-build.py in given directory.
     
@@ -75,7 +76,7 @@ def run_sphinx_build(sphinx_conf_dir, dry_run=False,
     
     # TODO: FEATURE: Option passing to sphinx-build.py
     
-    cmd1 = ["python", sphinx_build, ".", "../html"]
+    cmd1 = ["python", sphinx_build, ".", html_dir]
     log.info("Sphinx build, inside directory %s" % os.getcwd())
     log.info("Running sphinx-build: %s" % subprocess.list2cmdline(cmd1))
     
@@ -85,11 +86,7 @@ def run_sphinx_build(sphinx_conf_dir, dry_run=False,
     os.chdir(old_dir)
 
 if __name__ == '__main__':
-    try:
-        (options, modules) = parser.parse_args()
-    except ValueError:
-        parser.print_usage()
-        sys.exit(0)
+    (options, modules) = parser.parse_args()
         
     sphinx_project = '%s.__project__' % modules[0]
     sphinx_copyright = '%s.__copyright__' % modules[0]
@@ -99,17 +96,25 @@ if __name__ == '__main__':
     # Be verbose if on dry run
     if options.verbose or options.dry_run:
         log.setLevel(logging.INFO)
+        
+    output_dir = options.output or os.getcwd()
     
-    log.info("Creating documentation to directory '%s' ..." % options.output)
+    log.info("Creating %s,%s to directory '%s' ...", HTML_DIR, SPHINX_DIR, 
+             output_dir)
     
     # Temp directory inside the docs
-    temp_dir = os.path.join(options.output, TEMP_CONFIGURATION_DIR)
+    temp_dir = os.path.join(output_dir, SPHINX_DIR)
+    html_dir = os.path.join(output_dir, HTML_DIR)
     caps_dir = options.caps_dir
-    docs_dir = options.output
+    docs_dir = output_dir
+    scripts = options.scripts
     
     # Remove old temp directory
     if os.path.isdir(temp_dir):
         shutil.rmtree(temp_dir)
+        
+    if os.path.isdir(html_dir):
+        shutil.rmtree(html_dir)
         
     os.mkdir(temp_dir)
         
@@ -121,7 +126,7 @@ if __name__ == '__main__':
         'release' : sphinx_release,
         'caps_dir' : os.path.realpath(caps_dir),
         'docs_dir' : os.path.realpath(docs_dir),
-        'scripts' : [os.path.realpath(s) for s in options.scripts],
+        'scripts' : [os.path.realpath(s) for s in scripts],
         'modules' : modules,
     }
     
@@ -142,4 +147,5 @@ if __name__ == '__main__':
             sys.exit(0)
         # pylint: enable-msg=W0703
     
-    run_sphinx_build(temp_dir, sphinx_build=options.sphinx_build)
+    run_sphinx_build(temp_dir, html_dir, sphinx_build=options.sphinx_build)
+    
