@@ -2,9 +2,9 @@
 {# Python that has optparser #}
 {% block content %}
 
-.. program:: {{ script_name }}
-
 .. program-usage:: {{ optparser.get_usage() }}
+
+.. program:: {{ script_name }}
 
 {{ optparser.get_description() }}
 

@@ -47,6 +47,9 @@ sphinkydoc_modules = [{% for module in modules %}{{ repr(module) }}, {% endfor %
 sphinkydoc_scripts = [{% for script in scripts %}{{ repr(script) }}, {% endfor %}]
 sphinkydoc_index = True
 
+{% if caps_literals %}
+sphinkydoc_caps_literals = {{ repr(caps_literals) }}
+{% endif %}
 sphinkydoc_caps_dir = {{ repr(caps_dir) }}
 sphinkydoc_docs_dir = {{ repr(docs_dir) }}
 

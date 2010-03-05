@@ -27,7 +27,7 @@ Documentation
 .. rubric:: Modules and packages
 
 .. sphinkydoc-modules::
-	:maxdepth: 2
+	:maxdepth: 1
 	{% for module in modules %}
 	{{ module }}
 	{% endfor %}

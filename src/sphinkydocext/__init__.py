@@ -69,7 +69,7 @@ Files in caps dir
 
 These options *require* that :confval:`sphinkydoc_caps_dir` is set.
     
-.. confval:: sphinkydoc_caps_literal
+.. confval:: sphinkydoc_caps_literals
 
     List of :term:`caps files<caps-file>` that are treated as literally,
     defaults to [:data:`COPYING`].
@@ -128,8 +128,8 @@ import re
 import sys
 
 
-__version__ = "0.5.5"
-__release__ = "0.5.5 alpha"
+__version__ = "0.5.6"
+__release__ = "0.5.6 alpha"
 __copyright__ = "Jari Pennanen, 2010"
 __project__ = "Sphinkydoc, generates documentation for whole packages"
 
@@ -196,7 +196,7 @@ def builder_inited(app):
     # Caps files generation
     if caps_dir:
         _files = caps_doc(tenv, caps_dir, ext="rst", 
-                          caps_literals=conf.sphinkydoc_caps_literal, 
+                          caps_literals=conf.sphinkydoc_caps_literals, 
                           output_dir=app.srcdir)
         caps_files = filter(lambda p: not p.endswith('.rst'), 
                             map(truncate_path_rst, _files))
@@ -261,7 +261,7 @@ def setup(app):
         SphinkydocScripts, sphinkydoc_toc
         
     app.config.html_theme_path.append(THEMES_DIR)
-    app.add_config_value('sphinkydoc_caps_literal', [COPYING], '')
+    app.add_config_value('sphinkydoc_caps_literals', [COPYING], '')
     
     app.add_config_value('sphinkydoc_caps_included', ['README'], '')
     app.add_config_value('sphinkydoc_caps_about', 
@@ -278,8 +278,7 @@ def setup(app):
     app.add_description_unit('confval', 'confval', 
                              'pair: %s; configuration value')
     
-    app.add_description_unit('program-usage', 'program-usage', 
-                             '')
+    app.add_description_unit('program-usage', 'program-usage')
     
     app.add_config_value('sphinkydoc_index', False, '')
     app.add_config_value('sphinkydoc_readme_html', False, '')

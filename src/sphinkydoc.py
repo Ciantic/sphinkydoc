@@ -12,7 +12,7 @@ DESCRIPTION = """Sphinx automated documentation generator and builder script.
 Main purpose is to generate documentation for small projects, which usually does
 not require external written documents."""
 
-parser = optparse.OptionParser("""%prog [options] [primarymodule, ...]""", 
+parser = optparse.OptionParser("""%prog [options] primarymodule, ...""", 
                                description=DESCRIPTION)
 """Main parser.
 
@@ -43,12 +43,12 @@ parser.add_option("", "--no-validation",
                   dest="validate", action="store_false", default=True)
 parser.add_option("", "--caps-dir",
                   dest="caps_dir", default="../")
-parser.add_option("-l", "--caps-literal",
+parser.add_option("-l", "--caps-literals",
                   help="caps files which are included as literal files, "
                        "defaults to COPYING.* files",
                   metavar="CAPS_FILE",
                   dest="caps_literals", action="append", 
-                  default=['COPYING', 'COPYING.LESSER', 'COPYING.LIB'])
+                  default=None)
     
 # Pylint-disable settings ----------------
 # Todo messages:
@@ -106,6 +106,7 @@ if __name__ == '__main__':
     temp_dir = os.path.join(output_dir, SPHINX_DIR)
     html_dir = os.path.join(output_dir, HTML_DIR)
     caps_dir = options.caps_dir
+    caps_literals = options.caps_literals
     docs_dir = output_dir
     scripts = options.scripts
     
@@ -124,6 +125,7 @@ if __name__ == '__main__':
         'copyright' : sphinx_copyright,
         'version' : sphinx_version,
         'release' : sphinx_release,
+        'caps_literals' : caps_literals,
         'caps_dir' : os.path.realpath(caps_dir),
         'docs_dir' : os.path.realpath(docs_dir),
         'scripts' : [os.path.realpath(s) for s in scripts],
