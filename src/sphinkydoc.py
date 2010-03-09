@@ -43,7 +43,7 @@ parser.add_option("", "--no-validation",
                   dest="validate", action="store_false", default=True)
 parser.add_option("", "--caps-dir",
                   dest="caps_dir", default="../")
-parser.add_option("-l", "--caps-literals",
+parser.add_option("-l", "--caps-literal",
                   help="caps files which are included as literal files, "
                        "defaults to COPYING.* files",
                   metavar="CAPS_FILE",
