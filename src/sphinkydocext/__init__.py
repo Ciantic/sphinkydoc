@@ -58,8 +58,7 @@ Special directories
     
 .. confval:: sphinkydoc_caps_dir
 
-    Directory of :term:`caps-files<caps-file>`, defaults to :const:`None` and is
-    not used.
+    Directory of :term:`caps-files`, defaults to :const:`None` and is not used.
 
 .. note:: Relative paths are converted to absolute during `builder-init`, and
     thus should be safe to use.
@@ -71,23 +70,23 @@ These options *require* that :confval:`sphinkydoc_caps_dir` is set.
     
 .. confval:: sphinkydoc_caps_literals
 
-    List of :term:`caps files<caps-file>` that are treated as literally,
-    defaults to [:data:`COPYING`].
+    List of :term:`caps-files` that are treated as literally, defaults to
+    [:data:`COPYING`].
     
 .. confval:: sphinkydoc_caps_included
 
-    List of :term:`caps files<caps-file>` that are included and doesn't have a
-    separate page, defaults to [``'README'``].
+    List of :term:`caps-files` that are included and doesn't have a separate
+    page, defaults to [``'README'``].
     
 .. confval:: sphinkydoc_caps_about
 
-    List of :term:`caps files<caps-file>` that are categorized as About,
-    defaults to [``'AUTHORS'``, ``'THANKS'``, :data:`COPYING`, ``'LICENSE'``].
+    List of :term:`caps-files` that are categorized as About, defaults to
+    [``'AUTHORS'``, ``'THANKS'``, :data:`COPYING`, ``'LICENSE'``].
     
 .. confval:: sphinkydoc_caps_topic
 
-    List of :term:`caps files<caps-file>` that are categorized as Topic,
-    defaults to [:data:`ALL`].
+    List of :term:`caps-files` that are categorized as Topic, defaults to
+    [:data:`ALL`].
     
 Files in docs dir
 '''''''''''''''''

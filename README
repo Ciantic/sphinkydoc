@@ -7,9 +7,9 @@ purpose is to leverage the power of Sphinx for small Python projects. For those
 it is usually sufficient to document the code in docstrings.
 
 Sphinkydoc also tries to address the problem that *no documentation should be 
-written twice!* This is why system also tries to look for :term:`caps-files 
-<caps-file>` in your project, such as `INSTALL`, `README`, `COPYING`, which also
-contain bits for the documentation.
+written twice!* This is why system also tries to look for :term:`caps-files` 
+in your project, such as `INSTALL`, `README`, `COPYING`, which also contain 
+bits for the documentation.
 
 Licensed under rather permissive :ref:`FreeBSD license<LICENSE>`
 
@@ -24,12 +24,12 @@ Go to directory where you want the HTML documentation -- in this case
     
 If everything went well it should have created two directories for you 
 ``myproject/docs/html/`` and ``myproject/docs/_temp/``, these are deleted before 
-each run. The script simply looks the :term:`caps-files<caps-file>` by default 
+each run. The script simply looks the :term:`caps-files` by default 
 from directory *upwards from the execution directory*, you can also explicitely 
 specify this directory using :option:`--caps-dir<sphinkydoc.py --caps-dir>`.
 
 Optional *additional documentation* files are located in ``myproject/docs/``, 
-and should have extension ``.rst``. If you have :term:`caps-files <caps-file>` 
+and should have extension ``.rst``. If you have :term:`caps-files` 
 such as ``README``, ``INSTALL``, ``AUTHORS``, ``CHANGES``, ``LICENSE`` or any 
 other file that is written in uppercase, they are treated as reStructuredText
 files and included to documentation, to specify files which should be treated
