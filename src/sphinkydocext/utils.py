@@ -284,3 +284,13 @@ def get_module_members(module, use_all=True, custom_all=None):
             'all_datas' : all_datas, 'datas' : datas,
             'all_members' : all_members, 'members' : members,}
 
+
+def import_by_name(name):
+    """Light import wrapper"""
+    try:
+        __import__(name)
+        return sys.modules[name], sys.modules[name].__name__
+    except (ImportError, KeyError, ValueError):
+        raise ImportError("Unable to import %s " % name)
+    
+     

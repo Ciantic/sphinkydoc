@@ -8,8 +8,7 @@
 from sphinkydocext import log
 from sphinkydocext.templating import caps_literal, caps
 from sphinkydocext.utils import multi_matcher, get_submodules, \
-    get_module_members, script_get_optparser, is_python_script
-from sphinx.ext.autosummary import import_by_name
+    get_module_members, script_get_optparser, is_python_script, import_by_name
 import os
 import re
 import shutil
