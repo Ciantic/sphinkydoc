@@ -28,11 +28,20 @@ Docs generation
 
     List of module names which documentation is generated using
     :func:`~sphinkydocext.generate.module_doc`, defaults to empty list.
+
+.. confval:: sphinkydoc_modules_overwrite
+
+    Overwrite the existing generated module API files? Defaults to
+    :const:`False`.
     
 .. confval:: sphinkydoc_scripts
 
     List of paths to scripts which documentation is generated using
     :func:`~sphinkydocext.generate.script_doc`, defaults to empty list.
+
+.. confval:: sphinkydoc_scripts_overwrite
+
+    Overwrite the existing generated scripts files? Defaults to :const:`False`.
     
 .. confval:: sphinkydoc_index
 
@@ -46,6 +55,17 @@ Docs generation
 
 Special directories
 '''''''''''''''''''
+        
+.. confval:: sphinkydoc_modules_dir
+    
+    Directory where to *output* the generated module docs as
+    ``module.submodule.rst``. Defaults to same directory as `conf.py` of your
+    project.
+    
+.. confval:: sphinkydoc_scripts_dir
+
+    Directory where to *output* the generated script docs as ``script.py.rst``.
+    Defaults to same directory as `conf.py` of your project.
 
 .. confval:: sphinkydoc_docs_dir
 
@@ -167,8 +187,25 @@ def builder_inited(app):
     tenv = templating_environment()
     caps_files = []
     docs_files = []
-    docs_dir = os.path.abspath(conf.sphinkydoc_docs_dir)
-    caps_dir = os.path.abspath(conf.sphinkydoc_caps_dir)
+    
+    # Gather configuration directories
+    docs_dir = conf.sphinkydoc_docs_dir
+    caps_dir = conf.sphinkydoc_caps_dir
+    module_dir = truncate_path(conf.sphinkydoc_modules_dir, directory=app.srcdir)
+    script_dir = truncate_path(conf.sphinkydoc_scripts_dir, directory=app.srcdir)
+    
+    # Convert paths to abspaths if they are not already
+#    if module_dir:
+#        module_dir = os.path.abspath(module_dir)
+#        
+#    if script_dir:
+#        script_dir = os.path.abspath(script_dir)
+    
+    if docs_dir:
+        docs_dir = os.path.abspath(docs_dir)
+        
+    if caps_dir:
+        caps_dir = os.path.abspath(caps_dir)
     
     categorized = {}
     # Order of the items in category matchers, one could put this in the list of
@@ -208,7 +245,10 @@ def builder_inited(app):
     # Notice that following generates nothing, if the lists are empty:
     _module_files, _script_files = \
         generate.all_doc(tenv, conf.sphinkydoc_modules, conf.sphinkydoc_scripts,
-                         output_dir=app.srcdir)
+                         module_output_dir=module_dir, 
+                         module_overwrite=conf.sphinkydoc_modules_overwrite,
+                         script_output_dir=script_dir,
+                         script_overwrite=conf.sphinkydoc_scripts_overwrite)
         
     module_files = map(truncate_path_rst, _module_files)
     script_files = map(truncate_path_rst, _script_files)
@@ -272,7 +312,9 @@ def setup(app):
     app.add_config_value('sphinkydoc_topic', [ALL_ROOT, ALL_SUBINDEX], '')
     
     app.add_config_value('sphinkydoc_modules', [], '')
+    app.add_config_value('sphinkydoc_modules_overwrite', False, '')
     app.add_config_value('sphinkydoc_scripts', [], '')
+    app.add_config_value('sphinkydoc_scripts_overwrite', False, '')
     
     app.add_description_unit('confval', 'confval', 
                              'pair: %s; configuration value')
@@ -282,6 +324,8 @@ def setup(app):
     app.add_config_value('sphinkydoc_index', False, '')
     app.add_config_value('sphinkydoc_readme_html', False, '')
     app.add_config_value('sphinkydoc_docs_dir', None, '')
+    app.add_config_value('sphinkydoc_modules_dir', app.srcdir, '')
+    app.add_config_value('sphinkydoc_scripts_dir', app.srcdir, '')
     app.add_config_value('sphinkydoc_caps_dir', None, '')
     #app.add_config_value('sphinkydoc_magic_files', )
     #app.setup_extension('sphinkydocext')

@@ -122,8 +122,9 @@ def conf_py(tenv, tcontext, output_dir=None, overwrite=False):
     return filename
 
 
-def all_doc(tenv, module_names=None, script_paths=None, output_dir=None, 
-            overwrite=False):
+def all_doc(tenv, module_names=None, script_paths=None, module_output_dir=None,
+            script_output_dir=None, module_overwrite=False, 
+            script_overwrite=False):
     """Generates documentation for modules and scripts.
     
     :param tenv: Templating environment, retrieved e.g. by 
@@ -135,12 +136,14 @@ def all_doc(tenv, module_names=None, script_paths=None, output_dir=None,
     :param script_paths: List of paths to scripts, creates documentation files 
         for these. 
     
-    :param output_dir: Output directory of generated document.
+    :param module_output_dir: Output directory of generated module documents.
+    :param script_output_dir: Output directory of generated script documents.
     
     :returns: Tuple of generated module paths, and generated script paths.
     
     """
-    output_dir = output_dir or os.path.abspath(".")
+    module_output_dir = module_output_dir or os.path.abspath(".")
+    script_output_dir = script_output_dir or os.path.abspath(".")
     
     module_names = module_names or []
     script_paths = script_paths or []
@@ -151,64 +154,71 @@ def all_doc(tenv, module_names=None, script_paths=None, output_dir=None,
     for m in module_names:
         try:
             module_files.extend(recursive_module_doc(tenv, m, 
-                                                     output_dir=output_dir, 
-                                                     overwrite=overwrite))
-        except GenerateDocError:
-            pass
+                                                     output_dir=module_output_dir, 
+                                                     overwrite=module_overwrite))
+        except GenerateDocError, er:
+            log.warning("Unable to generating module doc for '%s':  %s", 
+                        m, unicode(er))
         
     for s in script_paths:
         try:
-            script_files.append(script_doc(tenv, s, output_dir=output_dir, 
-                                           overwrite=overwrite))
-        except GenerateDocError:
-            pass
+            script_files.append(script_doc(tenv, s, output_dir=script_output_dir, 
+                                           overwrite=script_overwrite))
+        except GenerateDocError, er:
+            log.warning("Unable to generating script doc for '%s':  %s", 
+                        s, unicode(er))
     
     return module_files, script_files
 
 
-def recursive_module_doc(tenv, module_name, output_dir=None, overwrite=False):
+def recursive_module_doc(tenv, module_name, output_dir="", overwrite=False):
     """Recursively generates module documentation also for all submodules,
     and subpackages.
     
-    :param tenv: Jinja2 templating environment.
-    :param module_name: Module 
-    :param output_dir: Output directory of generated documents.
-    :returns: List of generated document paths.
+    :param tenv: Jinja2 templating environment. :param module_name: Module
+    :param output_dir: Output directory of generated documents. **Must be
+        relative to the source directory!** :returns: List of generated document
+        paths.
     
     """
-    output_dir = output_dir or os.path.abspath(".")
-    
-    try:
-        module, _name = import_by_name(module_name)
-    except ImportError, e:
-        raise GenerateDocError("Failed to import '%s': %s" % (module_name, e))
     
     module_files = []
     
+    # We must try to import the module, so we can recurse to the submodules
     try:
-        module_files.append(module_doc(tenv, _name, output_dir=output_dir, 
-                                       overwrite=overwrite))
-    except GenerateDocError:
-        pass
+        module, _name = import_by_name(module_name)
+    except ImportError:
+        log.warning("Unable to import '%s', docs for this module cannot "
+                    "be generated.", module_name)
+    else:
+        try:
+            module_files.append(module_doc(tenv, module_name, 
+                                           output_dir=output_dir, 
+                                           overwrite=overwrite))
+        except GenerateDocError, er:
+            log.warning("Unable to generate module doc for '%s':  %s", 
+                        module_name, unicode(er))
     
-    for submodule_name in get_submodules(module):
-        module_files.extend(recursive_module_doc(tenv, 
-                                                 _name + "." + submodule_name, 
-                                                 output_dir=output_dir))
+        # Continue to found submodules
+        for submodule_name in get_submodules(module):
+            module_files.extend(\
+                recursive_module_doc(tenv, _name + "." + submodule_name, 
+                                     output_dir=output_dir, 
+                                     overwrite=overwrite))
     
     return module_files
 
 
-def module_doc(tenv, module_name, output_dir=None, overwrite=False):
+def module_doc(tenv, module_name, output_dir="", overwrite=False):
     """Generates documentation for module or package.
     
     :param tenv: Jinja2 templating environment.
     :param module_name: Full name of the module.
-    :param output_dir: Output directory of generated documents.
+    :param output_dir: Output directory of generated documents, 
+        **must be relative to the source directory!**
     :returns: Generated document path.
      
     """
-    output_dir = output_dir or os.path.abspath(".")
     
     try:
         module, name = import_by_name(module_name)
@@ -218,7 +228,9 @@ def module_doc(tenv, module_name, output_dir=None, overwrite=False):
     members = get_module_members(module)
     template = tenv.get_template("sphinkydoc/module.rst")
 
-    tcontext = {'module': module_name, 'fullname' : name }
+    tcontext = {'module': module_name, 
+                'output_dir' : output_dir, 
+                'fullname' : name }
     tcontext.update(members)
     filename = os.path.join(output_dir, "%s.rst" % name)
     
@@ -232,18 +244,18 @@ def module_doc(tenv, module_name, output_dir=None, overwrite=False):
     return filename
 
 
-def script_doc_py(tenv, script_path, optparser, output_dir=None, 
+def script_doc_py(tenv, script_path, optparser, output_dir="", 
                   overwrite=False):
     """Generates documentation file for script using :mod:`optparser`.
     
     :param tenv: Jinja2 templating environment.
     :param optparser: :obj:`optparse.OptionParser`
     :param script_path: Path to script.
-    :param output_dir: Output directory of generated documents.
+    :param output_dir: Output directory of generated documents, 
+        **must be relative to the source directory!**
     :returns: Generated document path.
      
     """
-    output_dir = output_dir or os.path.abspath(".")
     
     script_name = os.path.basename(script_path)
     
@@ -256,6 +268,7 @@ def script_doc_py(tenv, script_path, optparser, output_dir=None,
         template = tenv.get_template("sphinkydoc/script_python.rst")
         
     tcontext = {'script_path' : script_path, 
+                'output_dir' : output_dir,
                 'script_name' : script_name, 
                 'optparser' : optparser}
 

@@ -4,6 +4,7 @@
 from docutils import nodes
 from docutils.parsers.rst import directives
 from sphinkydocext.templating import templating_environment
+from sphinkydocext import log
 from sphinx import addnodes
 from sphinx.ext.autosummary import import_by_name
 from sphinx.util.compat import Directive
@@ -74,12 +75,15 @@ class SphinkydocModules(Directive):
         :returns: reStructuredText tuple that can be used in toc.
         
         """
-        try:
-            _module, name = import_by_name(module_name)
-        except ImportError, e:
-            raise e #TODO: We probably want to supress the error!
+#        try:
+#            _module, name = import_by_name(module_name)
+#        except ImportError, e:
+#            log.info('Module %s cannot be imported.' % module_name)
+#            
+#            #TODO: Error is not raised, should we handle the error?
+#            return module_name.split(".")[-1], module_name
         
-        return module_name.split(".")[-1], name
+        return module_name.split(".")[-1], module_name
 
 
 class SphinkydocScripts(Directive):

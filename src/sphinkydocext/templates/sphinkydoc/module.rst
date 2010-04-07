@@ -20,7 +20,7 @@ Members
 .. sphinkydoc-modules::
 	:maxdepth: 1
 	{% for submodule in all_modules %}
-	{{ fullname }}.{{ submodule }}
+	{{ output_dir }}{{ fullname }}.{{ submodule }}
 	{% endfor %}
 
 {% endif %}
