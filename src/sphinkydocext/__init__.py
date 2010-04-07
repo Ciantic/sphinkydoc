@@ -59,13 +59,14 @@ Special directories
 .. confval:: sphinkydoc_modules_dir
     
     Directory where to *output* the generated module docs as
-    ``module.submodule.rst``. Defaults to same directory as `conf.py` of your
-    project.
+    ``module.submodule.rst``. **Must be relative to sources directory.**
+    Defaults to root of source directory.
     
 .. confval:: sphinkydoc_scripts_dir
 
     Directory where to *output* the generated script docs as ``script.py.rst``.
-    Defaults to same directory as `conf.py` of your project.
+    **Must be relative to sources directory.** Defaults to root of source
+    directory.
 
 .. confval:: sphinkydoc_docs_dir
 
@@ -191,8 +192,8 @@ def builder_inited(app):
     # Gather configuration directories
     docs_dir = conf.sphinkydoc_docs_dir
     caps_dir = conf.sphinkydoc_caps_dir
-    module_dir = truncate_path(conf.sphinkydoc_modules_dir, directory=app.srcdir)
-    script_dir = truncate_path(conf.sphinkydoc_scripts_dir, directory=app.srcdir)
+    module_dir = conf.sphinkydoc_modules_dir
+    script_dir = conf.sphinkydoc_scripts_dir
     
     # Convert paths to abspaths if they are not already
 #    if module_dir:
@@ -324,8 +325,8 @@ def setup(app):
     app.add_config_value('sphinkydoc_index', False, '')
     app.add_config_value('sphinkydoc_readme_html', False, '')
     app.add_config_value('sphinkydoc_docs_dir', None, '')
-    app.add_config_value('sphinkydoc_modules_dir', app.srcdir, '')
-    app.add_config_value('sphinkydoc_scripts_dir', app.srcdir, '')
+    app.add_config_value('sphinkydoc_modules_dir', "", '')
+    app.add_config_value('sphinkydoc_scripts_dir', "", '')
     app.add_config_value('sphinkydoc_caps_dir', None, '')
     #app.add_config_value('sphinkydoc_magic_files', )
     #app.setup_extension('sphinkydocext')

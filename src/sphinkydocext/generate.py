@@ -122,8 +122,8 @@ def conf_py(tenv, tcontext, output_dir=None, overwrite=False):
     return filename
 
 
-def all_doc(tenv, module_names=None, script_paths=None, module_output_dir=None,
-            script_output_dir=None, module_overwrite=False, 
+def all_doc(tenv, module_names=None, script_paths=None, module_output_dir="",
+            script_output_dir="", module_overwrite=False, 
             script_overwrite=False):
     """Generates documentation for modules and scripts.
     
@@ -137,13 +137,13 @@ def all_doc(tenv, module_names=None, script_paths=None, module_output_dir=None,
         for these. 
     
     :param module_output_dir: Output directory of generated module documents.
+        **Must be relative path to source root.**
     :param script_output_dir: Output directory of generated script documents.
+        **Must be relative path to source root.**
     
     :returns: Tuple of generated module paths, and generated script paths.
     
     """
-    module_output_dir = module_output_dir or os.path.abspath(".")
-    script_output_dir = script_output_dir or os.path.abspath(".")
     
     module_names = module_names or []
     script_paths = script_paths or []
