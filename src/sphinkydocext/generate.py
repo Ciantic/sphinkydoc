@@ -191,10 +191,12 @@ def recursive_module_doc(tenv, module_name, output_dir="", overwrite=False):
         log.warning("Unable to import '%s', docs for this module cannot "
                     "be generated.", module_name)
     else:
+        
+        # Try to generate documentation for this module 
         try:
-            module_files.append(module_doc(tenv, module_name, 
-                                           output_dir=output_dir, 
-                                           overwrite=overwrite))
+            module_files.append(\
+                module_doc(tenv, module_name, output_dir=output_dir, 
+                           overwrite=overwrite))
         except GenerateDocError, er:
             log.warning("Unable to generate module doc for '%s':  %s", 
                         module_name, unicode(er))
