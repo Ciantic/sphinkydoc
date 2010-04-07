@@ -48,7 +48,8 @@ class SphinkydocModules(Directive):
     }
     
     def __init__(self, *args, **kwargs):
-        super(SphinkydocModules, self).__init__(*args, **kwargs)
+        # Apparently some old docutils has classic class Directive
+        Directive.__init__(self, *args, **kwargs)
         self.tenv = templating_environment()
     
     def run(self):
@@ -107,7 +108,7 @@ class SphinkydocScripts(Directive):
     }
     
     def __init__(self, *args, **kwargs):
-        super(SphinkydocScripts, self).__init__(*args, **kwargs)
+        Directive.__init__(self, *args, **kwargs)
         self.tenv = templating_environment()
     
     def run(self):
