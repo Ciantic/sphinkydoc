@@ -123,7 +123,7 @@ def conf_py(tenv, tcontext, output_dir=None, overwrite=False):
 
 def all_doc(tenv, module_names=None, script_paths=None, module_output_dir="",
             script_output_dir="", module_overwrite=False, 
-            script_overwrite=False):
+            script_overwrite=False, source_dir=""):
     """Generates documentation for modules and scripts.
     
     :param tenv: Templating environment, retrieved e.g. by 
@@ -137,8 +137,11 @@ def all_doc(tenv, module_names=None, script_paths=None, module_output_dir="",
     
     :param module_output_dir: Output directory of generated module documents.
         **Must be relative path to source root.**
+        
     :param script_output_dir: Output directory of generated script documents.
         **Must be relative path to source root.**
+        
+    :param source_dir: Source directory, preferably absolute path.
     
     :returns: Tuple of generated module paths, and generated script paths.
     
@@ -153,7 +156,8 @@ def all_doc(tenv, module_names=None, script_paths=None, module_output_dir="",
     for m in module_names:
         try:
             module_files.extend(recursive_module_doc(tenv, m, 
-                                                     output_dir=module_output_dir, 
+                                                     output_dir=module_output_dir,
+                                                     source_dir=source_dir, 
                                                      overwrite=module_overwrite))
         except GenerateDocError, er:
             log.warning("Unable to generating module doc for '%s':  %s", 
@@ -161,7 +165,8 @@ def all_doc(tenv, module_names=None, script_paths=None, module_output_dir="",
         
     for s in script_paths:
         try:
-            script_files.append(script_doc(tenv, s, output_dir=script_output_dir, 
+            script_files.append(script_doc(tenv, s, output_dir=script_output_dir,
+                                           source_dir=source_dir, 
                                            overwrite=script_overwrite))
         except GenerateDocError, er:
             log.warning("Unable to generating script doc for '%s':  %s", 
@@ -170,11 +175,13 @@ def all_doc(tenv, module_names=None, script_paths=None, module_output_dir="",
     return module_files, script_files
 
 
-def recursive_module_doc(tenv, module_name, output_dir="", overwrite=False):
+def recursive_module_doc(tenv, module_name, output_dir="", source_dir="", 
+                         overwrite=False):
     """Recursively generates module documentation also for all submodules,
     and subpackages.
     
     :param tenv: Jinja2 templating environment. :param module_name: Module
+    :param source_dir: Source directory.
     :param output_dir: Output directory of generated documents. **Must be
         relative to the source directory!** :returns: List of generated document
         paths.
@@ -195,7 +202,7 @@ def recursive_module_doc(tenv, module_name, output_dir="", overwrite=False):
         try:
             module_files.append(\
                 module_doc(tenv, module_name, output_dir=output_dir, 
-                           overwrite=overwrite))
+                           source_dir=source_dir, overwrite=overwrite))
         except GenerateDocError, er:
             log.warning("Unable to generate module doc for '%s':  %s", 
                         module_name, unicode(er))
@@ -205,16 +212,19 @@ def recursive_module_doc(tenv, module_name, output_dir="", overwrite=False):
             module_files.extend(\
                 recursive_module_doc(tenv, _name + "." + submodule_name, 
                                      output_dir=output_dir, 
+                                     source_dir=source_dir,
                                      overwrite=overwrite))
     
     return module_files
 
 
-def module_doc(tenv, module_name, output_dir="", overwrite=False):
+def module_doc(tenv, module_name, output_dir="", source_dir="", 
+               overwrite=False):
     """Generates documentation for module or package.
     
     :param tenv: Jinja2 templating environment.
     :param module_name: Full name of the module.
+    :param source_dir: Source directory.
     :param output_dir: Output directory of generated documents, 
         **must be relative to the source directory!**
     :returns: Generated document path.
@@ -233,7 +243,7 @@ def module_doc(tenv, module_name, output_dir="", overwrite=False):
                 'output_dir' : output_dir, 
                 'fullname' : name }
     tcontext.update(members)
-    filename = os.path.join(output_dir, "%s.rst" % name)
+    filename = os.path.join(source_dir, output_dir, "%s.rst" % name)
     
     # Write template, as "somemodule.submodule.rst"
     if overwrite or not os.path.exists(filename):
@@ -245,23 +255,26 @@ def module_doc(tenv, module_name, output_dir="", overwrite=False):
     return filename
 
 
-def script_doc_py(tenv, script_path, optparser, output_dir="", 
-                  overwrite=False):
+def script_doc_py(tenv, script_path, optparser, output_dir="",
+                  source_dir="", overwrite=False):
     """Generates documentation file for script using :mod:`optparser`.
     
     :param tenv: Jinja2 templating environment.
     :param optparser: :obj:`optparse.OptionParser`
     :param script_path: Path to script.
+    :param source_dir: Source directory.
     :param output_dir: Output directory of generated documents, 
         **must be relative to the source directory!**
     :returns: Generated document path.
      
     """
     
+    
     script_name = os.path.basename(script_path)
     
-    filename = os.path.join(output_dir, "%s.rst" % script_name)
-    filename_t = os.path.join(output_dir, "%s.rst.template" % script_name)
+    filename = os.path.join(source_dir, output_dir, "%s.rst" % script_name)
+    filename_t = os.path.join(source_dir, output_dir, 
+                              "%s.rst.template" % script_name)
     
     if os.path.exists(filename_t):
         template = tenv.from_string(open(filename_t).read())
@@ -283,11 +296,13 @@ def script_doc_py(tenv, script_path, optparser, output_dir="",
     return filename
 
 
-def script_doc_help(tenv, script_path, output_dir=None, overwrite=False):
+def script_doc_help(tenv, script_path, output_dir=None, source_dir="", 
+                    overwrite=False):
     """Generates documentation file for script using ``--help``.
     
     :param tenv: Jinja2 templating environment.
     :param script_path: Path to script.
+    :param source_dir: Source directory.
     :param output_dir: Output directory of generated documents.
     :returns: Generated document path.
      
@@ -308,8 +323,9 @@ def script_doc_help(tenv, script_path, output_dir=None, overwrite=False):
         help_text, _stderr = p.communicate()
         
     help_text = help_text.replace("\r", "")
-    filename = os.path.join(output_dir, "%s.rst" % script_name)
-    filename_t = os.path.join(output_dir, "%s.rst.template" % script_name)
+    filename = os.path.join(source_dir, output_dir, "%s.rst" % script_name)
+    filename_t = os.path.join(source_dir, output_dir, 
+                              "%s.rst.template" % script_name)
     
     if os.path.exists(filename_t):
         template = tenv.from_string(open(filename_t).read())
@@ -330,11 +346,13 @@ def script_doc_help(tenv, script_path, output_dir=None, overwrite=False):
     return filename
 
 
-def script_doc(tenv, script_path, output_dir=None, overwrite=False):
+def script_doc(tenv, script_path, output_dir=None, source_dir=None, 
+               overwrite=False):
     """Generates documentation file for script.
     
     :param tenv: Jinja2 templating environment.
     :param script_path: Path to script.
+    :param source_dir: Source directory.
     :param output_dir: Output directory of generated documents.
     :returns: Generated document path.
      
@@ -345,11 +363,12 @@ def script_doc(tenv, script_path, output_dir=None, overwrite=False):
         optparser = script_get_optparser(script_path)
         if optparser:
             return script_doc_py(tenv, script_path, optparser, 
-                                 output_dir=output_dir, overwrite=overwrite)
+                                 source_dir=source_dir, output_dir=output_dir, 
+                                 overwrite=overwrite)
     
     # Fallback to --help
     return script_doc_help(tenv, script_path, output_dir=output_dir, 
-                           overwrite=overwrite)
+                           source_dir=source_dir, overwrite=overwrite)
 
 
 def caps_doc(tenv, caps_dir, ext='rst', caps_literals=None, output_dir=None, 

@@ -196,12 +196,6 @@ def builder_inited(app):
     script_dir = conf.sphinkydoc_scripts_dir
     
     # Convert paths to abspaths if they are not already
-#    if module_dir:
-#        module_dir = os.path.abspath(module_dir)
-#        
-#    if script_dir:
-#        script_dir = os.path.abspath(script_dir)
-    
     if docs_dir:
         docs_dir = os.path.abspath(docs_dir)
         
@@ -249,7 +243,8 @@ def builder_inited(app):
                          module_output_dir=module_dir, 
                          module_overwrite=conf.sphinkydoc_modules_overwrite,
                          script_output_dir=script_dir,
-                         script_overwrite=conf.sphinkydoc_scripts_overwrite)
+                         script_overwrite=conf.sphinkydoc_scripts_overwrite,
+                         source_dir=os.path.abspath(app.srcdir))
         
     module_files = map(truncate_path_rst, _module_files)
     script_files = map(truncate_path_rst, _script_files)
