@@ -36,6 +36,19 @@ def truncate_path(path, directory=None, extension=None):
     return truncpath
 
 
+def directory_slash_suffix(str):
+    """Add the directory slash suffix.
+    
+    :param str: Path to slashes.
+    :returns: Path representing directory.
+    
+    """
+    
+    if not str.endswith(os.path.sep) or not str.endswith('/'):
+        return str + os.path.sep
+    return str
+
+
 def multi_matcher(patterns):
     """Returns multi matcher for several patterns.
     

@@ -36,7 +36,7 @@ html_theme = "sphinkydoc"
 
 # autoclass_content = "both"
 autodoc_member_order = "groupwise"
-autosummary_generate = True
+autosummary_generate = False
 
 # Todo ------------------------------------
 
@@ -44,6 +44,7 @@ todo_include_todos = False
 
 # Autogenerate documentation for these modules and scripts
 sphinkydoc_modules = [{% for module in modules %}{{ repr(module) }}, {% endfor %}]
+sphinkydoc_modules_dir = 'api'
 sphinkydoc_scripts = [{% for script in scripts %}{{ repr(script) }}, {% endfor %}]
 sphinkydoc_index = True
 

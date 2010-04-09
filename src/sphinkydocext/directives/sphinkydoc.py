@@ -84,7 +84,7 @@ class SphinkydocModules(Directive):
 #            #TODO: Error is not raised, should we handle the error?
 #            return module_name.split(".")[-1], module_name
         
-        return module_name.split(".")[-1], module_name
+        return os.path.basename(module_name.split(".")[-1]), module_name
 
 
 class SphinkydocScripts(Directive):

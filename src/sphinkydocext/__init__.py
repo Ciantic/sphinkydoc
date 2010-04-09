@@ -7,8 +7,8 @@ have to specify any settings, the script creates Sphinx configurations itself.
 Usage in existing Sphinx project
 ================================
 
-In case one decided to use this as extension, it is assumed that one understands
-the basics of Sphinx documentation generator.
+Using this as extension, it is assumed that one understands the basics of Sphinx
+documentation generator.
 
 Since main purpose of :mod:`sphinkydocext` is to generate documentation files,
 and having generated files in same place as written documentation files makes
@@ -143,7 +143,7 @@ from sphinkydocext import directives, utils, templating, generate
 from sphinkydocext.generate import caps_doc
 from sphinkydocext.templating import templating_environment
 from sphinkydocext.utils import copy_tree, multi_matcher, path_to_posix, \
-    truncate_path
+    truncate_path, directory_slash_suffix
 import re
 import sys
 
@@ -194,6 +194,24 @@ def builder_inited(app):
     caps_dir = conf.sphinkydoc_caps_dir
     module_dir = conf.sphinkydoc_modules_dir
     script_dir = conf.sphinkydoc_scripts_dir
+    
+    # Add "/" suffixes for directories if needed
+    if module_dir:
+        module_dir = directory_slash_suffix(module_dir)
+        
+    if script_dir:
+        script_dir = directory_slash_suffix(script_dir)
+    
+    # Create relative pathed script and module dirs
+    try:
+        os.makedirs(os.path.join(app.srcdir, module_dir))
+    except os.error:
+        pass
+    
+    try:
+        os.makedirs(os.path.join(app.srcdir, script_dir))
+    except os.error:
+        pass
     
     # Convert paths to abspaths if they are not already
     if docs_dir:
@@ -277,6 +295,8 @@ def builder_inited(app):
         tcontext = {
             'caps_files' : caps_files,
             'docs_files' : docs_files,
+            'modules_dir' : module_dir,
+            'scripts_dir' : script_dir,
             'scripts' : conf.sphinkydoc_scripts,
             'modules' : conf.sphinkydoc_modules,
         }
@@ -311,22 +331,21 @@ def setup(app):
     app.add_config_value('sphinkydoc_modules_overwrite', False, '')
     app.add_config_value('sphinkydoc_scripts', [], '')
     app.add_config_value('sphinkydoc_scripts_overwrite', False, '')
-    
-    app.add_description_unit('confval', 'confval', 
-                             'pair: %s; configuration value')
-    
-    app.add_description_unit('program-usage', 'program-usage')
-    
     app.add_config_value('sphinkydoc_index', False, '')
     app.add_config_value('sphinkydoc_readme_html', False, '')
     app.add_config_value('sphinkydoc_docs_dir', None, '')
     app.add_config_value('sphinkydoc_modules_dir', "", '')
     app.add_config_value('sphinkydoc_scripts_dir', "", '')
     app.add_config_value('sphinkydoc_caps_dir', None, '')
-    #app.add_config_value('sphinkydoc_magic_files', )
-    #app.setup_extension('sphinkydocext')
-    app.connect('builder-inited', builder_inited)
+
+    app.add_description_unit('confval', 'confval', 
+                             'pair: %s; configuration value')
+    
+    app.add_description_unit('program-usage', 'program-usage')
+    
     app.add_node(sphinkydoc_toc)
     app.add_directive('usage', usage_directive, 1, (0, 1, 1))
     app.add_directive('sphinkydoc-scripts', SphinkydocScripts)
     app.add_directive('sphinkydoc-modules', SphinkydocModules)
+    
+    app.connect('builder-inited', builder_inited)

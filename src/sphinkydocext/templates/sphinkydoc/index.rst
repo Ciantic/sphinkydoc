@@ -18,7 +18,7 @@ Documentation
 
 .. sphinkydoc-scripts::
 	{% for script in scripts %}
-	{{ script }}
+	{{ scripts_dir }}{{ script }}
 	{% endfor %}
 {% endif %}
 
@@ -29,7 +29,7 @@ Documentation
 .. sphinkydoc-modules::
 	:maxdepth: 1
 	{% for module in modules %}
-	{{ module }}
+	{{ modules_dir }}{{ module }}
 	{% endfor %}
 {% endif %}
 

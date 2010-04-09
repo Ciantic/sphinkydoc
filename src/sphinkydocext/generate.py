@@ -372,7 +372,8 @@ def script_doc(tenv, script_path, output_dir=None, source_dir=None,
 
 
 def caps_doc(tenv, caps_dir, ext='rst', caps_literals=None, output_dir=None, 
-             dry_run=False, overwrite=False):
+             dry_run=False, overwrite=False, 
+             allowed_exts=['rst', 'inc', 'txt', '']):
     """Generate documentation from caps files in ``caps_dir``.
     
     Caps files are files such as INSTALL, COPYING, README, which contain 
@@ -384,6 +385,8 @@ def caps_doc(tenv, caps_dir, ext='rst', caps_literals=None, output_dir=None,
     :param caps_literals: Caps files that are treated as literal files.
     :param output_dir: Output directory of generated documents.
     :param dry_run: Dry run only, no copying or other harmful changes.
+    :param overwrite: Overwrite the existing file? Defaults to :const:`False`.
+    :param allowed_ext: List of allowed extensions.
     
     :returns: List of generated document paths. 
     
@@ -397,29 +400,34 @@ def caps_doc(tenv, caps_dir, ext='rst', caps_literals=None, output_dir=None,
     caps_matcher = multi_matcher(caps_literals)
     
     for filename in dir_contents:
-        if re.match("^[A-Z](\.[A-Za-z]+)?", filename):
-            new_filename = filename
+        log.info("Filename: %s" % filename)
+        if re.match(r"^[A-Z]{3,}(\.[A-Za-z]+)?$", filename):
             
-            # Add the extension if not there
-            if not filename.endswith(ext):
-                new_filename += '.%s' % ext
-                
-            new_filename_wo_ext = new_filename[:-len(ext)-1]
-
+            # Gather information about the file
+            _root, _ext = os.path.splitext(filename)
+            f_base = os.path.basename(_root)
+            f_ext = _ext.lower()[1:]
+            
+            # If not allowed extension, skip
+            if not any(f_ext == allowed_ext for allowed_ext in allowed_exts):
+                continue
+            
+            output_filename = f_base + "." + ext
+            
             filepath = os.path.join(caps_dir, filename)
-            new_filepath = os.path.join(output_dir, new_filename)
+            output_filepath = os.path.join(output_dir, output_filename)
             
             if not dry_run:
-                if overwrite or not os.path.exists(new_filepath):
-                    shutil.copy(filepath, new_filepath)
-                    log.info("Caps %s copied to %s" % (filepath, new_filepath))
+                if overwrite or not os.path.exists(output_filepath):
+                    shutil.copy(filepath, output_filepath)
+                    log.info("Caps %s copied to %s" % (filepath, output_filepath))
                     
-            if caps_matcher(new_filename_wo_ext):        
-                caps_literal(tenv, new_filepath)
+            if caps_matcher(f_base):        
+                caps_literal(tenv, output_filepath)
             else:
-                caps(tenv, new_filepath)
+                caps(tenv, output_filepath)
             
-            caps_files.append(new_filepath)
+            caps_files.append(output_filepath)
     
     return caps_files
 
