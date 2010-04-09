@@ -20,7 +20,7 @@ This is defined in module level so that other scripts can access it.
 """
 
 parser.add_option("-v", "--verbose",
-                  dest="verbose", action="store_true", default=True) 
+                  dest="verbose", action="store_true", default=False) 
 parser.add_option("-n", "--dry-run",
                   help="don't do anything harmful, uses verbose also",
                   dest="dry_run", action="store_true", default=False)
@@ -92,6 +92,9 @@ if __name__ == '__main__':
     sphinx_copyright = '%s.__copyright__' % modules[0]
     sphinx_version = '%s.__version__' % modules[0]
     sphinx_release = '%s.__release__' % modules[0]
+    
+    # Warnings only
+    log.setLevel(logging.WARNING)
     
     # Be verbose if on dry run
     if options.verbose or options.dry_run:

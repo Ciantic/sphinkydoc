@@ -4,6 +4,7 @@ from pkgutil import iter_modules
 import optparse
 import inspect
 import logging
+import posixpath
 import os
 import re
 import sys
@@ -39,13 +40,24 @@ def truncate_path(path, directory=None, extension=None):
 def directory_slash_suffix(str):
     """Add the directory slash suffix.
     
+    Converts the directory to posixpath if not already. Slashes are not added to
+    empty strings.
+    
     :param str: Path to slashes.
     :returns: Path representing directory.
     
     """
+    str = posixpath.normpath(str)
     
-    if not str.endswith(os.path.sep) or not str.endswith('/'):
-        return str + os.path.sep
+    # Empty strings are not added slashes
+    if not str:
+        return str
+    
+    # Add slashes to the end of path
+    if not str.endswith('/'):
+        return str + "/"
+    
+    # Return unchanged, the path had slash already
     return str
 
 
@@ -216,10 +228,10 @@ def all_filterer(module, use_all=True):
         has_all = False
         
         if use_all:
-            log.warning("Module %s is missing __all__, falling back to "
-                        "public members" % module.__name__)
+            log.info("Module %s is missing __all__, falling back to "
+                     "public members" % module.__name__)
         
-        custom_all = lambda m,n: not n.startswith("_")
+        custom_all = lambda _m,n: not n.startswith("_")
     return has_all, custom_all
 
 

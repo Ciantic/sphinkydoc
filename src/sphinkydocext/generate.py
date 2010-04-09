@@ -400,7 +400,6 @@ def caps_doc(tenv, caps_dir, ext='rst', caps_literals=None, output_dir=None,
     caps_matcher = multi_matcher(caps_literals)
     
     for filename in dir_contents:
-        log.info("Filename: %s" % filename)
         if re.match(r"^[A-Z]{3,}(\.[A-Za-z]+)?$", filename):
             
             # Gather information about the file

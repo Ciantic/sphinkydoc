@@ -137,7 +137,7 @@ logging.basicConfig()
 log = logging.getLogger("sphinkydoc")
 """Sphinkydoc logger"""
 
-log.setLevel(logging.INFO) # TODO: DEBUG!
+log.setLevel(logging.WARNING)
 
 from sphinkydocext import directives, utils, templating, generate
 from sphinkydocext.generate import caps_doc
@@ -192,15 +192,8 @@ def builder_inited(app):
     # Gather configuration directories
     docs_dir = conf.sphinkydoc_docs_dir
     caps_dir = conf.sphinkydoc_caps_dir
-    module_dir = conf.sphinkydoc_modules_dir
-    script_dir = conf.sphinkydoc_scripts_dir
-    
-    # Add "/" suffixes for directories if needed
-    if module_dir:
-        module_dir = directory_slash_suffix(module_dir)
-        
-    if script_dir:
-        script_dir = directory_slash_suffix(script_dir)
+    module_dir = directory_slash_suffix(conf.sphinkydoc_modules_dir)
+    script_dir = directory_slash_suffix(conf.sphinkydoc_scripts_dir)
     
     # Create relative pathed script and module dirs
     try:
@@ -337,6 +330,7 @@ def setup(app):
     app.add_config_value('sphinkydoc_modules_dir', "", '')
     app.add_config_value('sphinkydoc_scripts_dir', "", '')
     app.add_config_value('sphinkydoc_caps_dir', None, '')
+    app.add_config_value('sphinkydoc_debug', False, '')
 
     app.add_description_unit('confval', 'confval', 
                              'pair: %s; configuration value')
@@ -347,5 +341,9 @@ def setup(app):
     app.add_directive('usage', usage_directive, 1, (0, 1, 1))
     app.add_directive('sphinkydoc-scripts', SphinkydocScripts)
     app.add_directive('sphinkydoc-modules', SphinkydocModules)
+    
+    # Debugging settings
+    if app.config.sphinkydoc_debug:
+        log.setLevel(logging.INFO)
     
     app.connect('builder-inited', builder_inited)
